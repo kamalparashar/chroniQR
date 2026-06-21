@@ -6,9 +6,10 @@ import type { AuthUser } from '../utils/auth';
 interface AuthScreenProps {
   initialTab?: 'login' | 'signup';
   onAuth: (user: AuthUser) => void;
+  onSwitchTab?: (tab: 'login' | 'signup') => void;
 }
 
-export const AuthScreen: React.FC<AuthScreenProps> = ({ initialTab = 'login', onAuth }) => {
+export const AuthScreen: React.FC<AuthScreenProps> = ({ initialTab = 'login', onAuth, onSwitchTab }) => {
   const [tab, setTab] = useState<'login' | 'signup'>(initialTab);
 
   // Login fields
@@ -33,7 +34,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ initialTab = 'login', on
     setLoginError('');
     setLoginLoading(true);
     try {
-      const user = login(loginEmail, loginPassword);
+      const user = await login(loginEmail, loginPassword);
       if (!user) {
         setLoginError('Invalid email or password. Please try again.');
       } else {
@@ -59,7 +60,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ initialTab = 'login', on
     }
     setSignupLoading(true);
     try {
-      const user = signUp(signupName, signupEmail, signupPassword);
+      const user = await signUp(signupName, signupEmail, signupPassword);
       onAuth(user);
     } catch (err: any) {
       setSignupError(err.message || 'An error occurred.');

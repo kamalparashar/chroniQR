@@ -6,19 +6,40 @@ import type { QrCodeData } from './components/QrCard';
 import { QrForm } from './components/QrForm';
 import { AnalyticsView } from './components/AnalyticsView';
 import { SettingsView } from './components/SettingsView';
+import { AuthScreen } from './components/AuthScreen';
+import { LandingPage } from './components/LandingPage';
 import { callBackendAction, fetchFromBackend } from './utils/api';
+import { getSession, sessionToAuthUser, logout } from './utils/auth';
 import type { AuthUser } from './utils/auth';
+import { supabase } from './utils/supabaseClient';
 import { Plus, Search, Filter, RefreshCw } from 'lucide-react';
 
-// ── Dummy auth user (swap for real JWT session later) ───────────────────────
-const DUMMY_USER: AuthUser = {
-  id:    '00000000-0000-0000-0000-000000000001',
-  name:  'Demo User',
-  email: 'demo@chroniqr.dev',
-};
-
 function App() {
-  const [authUser] = useState<AuthUser>(DUMMY_USER);
+  const [authUser, setAuthUser]   = useState<AuthUser | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [authTab, setAuthTab]     = useState<'login' | 'signup'>('login');
+  // 'landing' = first-time visitor, 'auth' = explicitly navigated to login/signup
+  const [view, setView]           = useState<'landing' | 'auth'>('landing');
+
+  // ── Session bootstrap — check for an existing session on page load ──────
+  useEffect(() => {
+    getSession().then(session => {
+      if (session) setAuthUser(sessionToAuthUser(session));
+      setAuthLoading(false);
+    });
+
+    // Listen for auth state changes (login / logout / token refresh)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session) {
+        setAuthUser(sessionToAuthUser(session));
+      } else {
+        setAuthUser(null);
+        setQrs([]);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   // ── Dashboard tab state ────────────────────────────────────────────────────
   const [activeTab, setActiveTab]                       = useState<'qrs' | 'settings'>('qrs');
@@ -37,23 +58,26 @@ function App() {
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive' | 'expired'>('all');
   const [loading, setLoading]           = useState(true);
 
-  // ── Load QR data on mount ──────────────────────────────────────────────────
-  useEffect(() => { fetchQrs(); }, []);
+  // ── Load QR data when user is authenticated ────────────────────────────────
+  useEffect(() => {
+    if (authUser) fetchQrs();
+  }, [authUser]);
 
-  const activeClient = authUser.id;
+  const activeClient = authUser?.id ?? '';
 
-  // ── Logout: no-op in dummy mode (just a UI hook for when real auth lands) ──
-  const handleLogout = () => {
-    console.info('[dummy auth] logout pressed — no session to clear');
+  // ── Logout ────────────────────────────────────────────────────────────────
+  const handleLogout = async () => {
+    await logout();
+    // onAuthStateChange listener above will clear authUser.
+    // Send the user to the auth screen (not the landing page) after logout.
+    setView('auth');
   };
 
   // ── Backend integration ────────────────────────────────────────────────────
   const fetchQrs = async () => {
     if (!authUser) return;
     try {
-      // GET /qr-codes?client_id=<id>
       const qrList: QrCodeData[] = await fetchFromBackend('/qr-codes', authUser.id);
-      // GET /scans/count?client_id=<id>  → { "<qr_id>": <count>, … }
       let scansMap: Record<string, number> = {};
       try {
         scansMap = await fetchFromBackend('/scans/count', authUser.id);
@@ -130,6 +154,34 @@ function App() {
     return matchesSearch;
   });
 
+  // ── Auth loading / gate ───────────────────────────────────────────────────
+  if (authLoading) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'var(--color-app-bg)' }}>
+        <RefreshCw size={28} className="spin text-muted" />
+      </div>
+    );
+  }
+
+  if (!authUser) {
+    // First-time visitor (no prior session) → show marketing landing page
+    if (view === 'landing') {
+      return (
+        <LandingPage
+          onGetStarted={() => { setAuthTab('signup'); setView('auth'); }}
+          onLogin={() => { setAuthTab('login'); setView('auth'); }}
+        />
+      );
+    }
+    // Explicit navigation or post-logout → show auth screen
+    return (
+      <AuthScreen
+        initialTab={authTab}
+        onAuth={(user) => setAuthUser(user)}
+        onSwitchTab={setAuthTab}
+      />
+    );
+  }
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: 'var(--color-app-bg)' }}>
@@ -308,7 +360,7 @@ function App() {
               chroni<span style={{ color: 'var(--color-accent)' }}>QR</span>
             </span>
             <span className="text-muted">|</span>
-            <span className="text-muted">© 2026 Vocallabs Inc. All rights reserved.</span>
+            <span className="text-muted">© 2026 chroniQR. All rights reserved.</span>
           </div>
           <div style={{ display: 'flex', gap: 'var(--spacing-16)' }}>
             <span className="highlight-pill highlight-pill-violet" style={{ fontSize: 10 }}>Secure Encrypted</span>
