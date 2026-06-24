@@ -10,19 +10,6 @@
 
 ---
 
-## 🧭 Core Philosophy & Design Language
-
-chroniQR follows a strict **Machinist Blueprint & Precision Digital** UI design system:
-- **Aesthetics:** Technical, dark-mode-first layout optimized for glowing accents.
-- **Contrast & Radii:** Rounded borders strictly restricted to `6px` for interactive nodes and `12px` for main panels. Zero pill-shaped buttons.
-- **Harmonious Palette:** 
-  - Backgrounds: `#000000` (Absolute Black) & `#0A0A0A` (Card Gray)
-  - Accents: `#CCFF00` (Voltage Lime) & `#2ECA45` (Success Green)
-  - Text: `#EDEDED` (Off-white reading text) & `#A1A1AA` (Zinc secondary)
-- **Typography:** Sans-serif fonts (Geist, Inter) for interface hierarchy paired with monospace typography (Geist Mono, JetBrains Mono) for numerical data, slugs, scan counts, and UUIDs.
-
----
-
 ## ⚡ Key Features
 
 ### 1. Dynamic, Time-Based Routing Engine
@@ -160,19 +147,6 @@ Ensure your Go backend (located in your sibling directory or as part of the orch
 | **DELETE** | `/api/qr/:id`| Permanent deletion of a QR code | Yes (Bearer JWT) |
 | **GET** | `/api/scans/count` | Retrieve aggregated scan statistics | Yes (Bearer JWT) |
 | **GET** | `/api/scans` | Query scan logs by `qr_id` | Yes (Bearer JWT) |
-| **POST** | `/api/scan-location` | Receive client-side device info and GPS | No |
 | **GET** | `/:short_code` | Resolve dynamic redirect to target destination | No |
 
 ---
-
-## 🤝 Contributing
-
-Contributions are welcome! Please follow these guidelines:
-1. Ensure all styles align with the grid system in `design.md`.
-2. Do not use soft drop shadows or pill buttons.
-3. Write clean, documented React hooks and components.
-4. Ensure code passes all TypeScript compiler validations (`npm run build`).
-
----
-
-*chroniQR — Built with absolute precision.*
