@@ -12,6 +12,11 @@ interface AuthScreenProps {
 export const AuthScreen: React.FC<AuthScreenProps> = ({ initialTab = 'login', onAuth, onSwitchTab }) => {
   const [tab, setTab] = useState<'login' | 'signup'>(initialTab);
 
+  const handleTabChange = (nextTab: 'login' | 'signup') => {
+    setTab(nextTab);
+    onSwitchTab?.(nextTab);
+  };
+
   // Login fields
   const [loginEmail, setLoginEmail]       = useState('');
   const [loginPassword, setLoginPassword] = useState('');
@@ -176,7 +181,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ initialTab = 'login', on
             <button
               key={t}
               type="button"
-              onClick={() => setTab(t)}
+              onClick={() => handleTabChange(t)}
               style={{
                 flex: 1,
                 padding: '8px 0',
@@ -273,7 +278,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ initialTab = 'login', on
               Don't have an account?{' '}
               <button
                 type="button"
-                onClick={() => setTab('signup')}
+                onClick={() => handleTabChange('signup')}
                 style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-accent)', fontWeight: 600, fontSize: 13 }}
               >
                 Sign up free
@@ -385,7 +390,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ initialTab = 'login', on
               Already have an account?{' '}
               <button
                 type="button"
-                onClick={() => setTab('login')}
+                onClick={() => handleTabChange('login')}
                 style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-accent)', fontWeight: 600, fontSize: 13 }}
               >
                 Log in
