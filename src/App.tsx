@@ -26,6 +26,9 @@ function App() {
     getSession().then(session => {
       if (session) setAuthUser(sessionToAuthUser(session));
       setAuthLoading(false);
+    }).catch(err => {
+      console.error('Session bootstrap failed:', err);
+      setAuthLoading(false);
     });
 
     // Listen for auth state changes (login / logout / token refresh)
@@ -199,17 +202,6 @@ function App() {
           />
         ) : (
           <>
-            {/* Announcement Banner */}
-            <div style={{ textAlign: 'center', marginBottom: 'var(--spacing-32)' }}>
-              <div className="announcement-banner">
-                <span style={{ display: 'inline-block', width: 6, height: 6, borderRadius: '50%', backgroundColor: 'var(--color-success)' }} />
-                <span>Go backend on port 3001 — dynamic QR routing active.</span>
-                <a href="https://github.com/kamalparashar" target="_blank" rel="noopener noreferrer">
-                  API docs →
-                </a>
-              </div>
-            </div>
-
             {/* Dashboard Header */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 'var(--spacing-32)', gap: 16, flexWrap: 'wrap' }}>
               <div>
