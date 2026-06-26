@@ -8,6 +8,7 @@ import { AnalyticsView } from './components/AnalyticsView';
 import { SettingsView } from './components/SettingsView';
 import { AuthScreen } from './components/AuthScreen';
 import { LandingPage } from './components/LandingPage';
+import { QrPreviewModal } from './components/QrPreviewModal';
 import { callBackendAction, fetchFromBackend } from './utils/api';
 import { getSession, sessionToAuthUser, logout } from './utils/auth';
 import type { AuthUser } from './utils/auth';
@@ -48,6 +49,7 @@ function App() {
   const [activeTab, setActiveTab]                       = useState<'qrs' | 'settings'>('qrs');
   const [selectedQrForAnalytics, setSelectedQrForAnalytics] = useState<QrCodeData | null>(null);
   const [editingQr, setEditingQr]                       = useState<QrCodeData | null>(null);
+  const [previewQr, setPreviewQr]                       = useState<QrCodeData | null>(null);
   const [showCreateForm, setShowCreateForm]             = useState(false);
 
   // ── Data state ─────────────────────────────────────────────────────────────
@@ -64,7 +66,7 @@ function App() {
   // ── Load QR data when user is authenticated ────────────────────────────────
   useEffect(() => {
     if (authUser) fetchQrs();
-  }, [authUser]);
+  }, [authUser?.id]);
 
   const activeClient = authUser?.id ?? '';
 
@@ -334,6 +336,7 @@ function App() {
                         onViewAnalytics={setSelectedQrForAnalytics}
                         onToggleActive={handleToggleActive}
                         onDelete={handleDeleteQr}
+                        onSelectForPreview={setPreviewQr}
                       />
                     ))}
                   </div>
@@ -361,6 +364,12 @@ function App() {
           </div>
         </div>
       </footer>
+      {previewQr && (
+        <QrPreviewModal
+          qr={previewQr}
+          onClose={() => setPreviewQr(null)}
+        />
+      )}
     </div>
   );
 }

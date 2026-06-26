@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Calendar, Tag, BarChart3, ExternalLink, Settings, Eye, Trash2, Globe, MessageSquare, Phone, Mail, User, Clock } from 'lucide-react';
+import { Calendar, Tag, ExternalLink, Settings, Eye, Trash2, Globe, MessageSquare, Phone, Mail, User, Clock } from 'lucide-react';
 
 export interface QrCodeData {
   id: string;
@@ -25,6 +25,7 @@ interface QrCardProps {
   onViewAnalytics: (qr: QrCodeData) => void;
   onToggleActive: (qr: QrCodeData) => void;
   onDelete: (qr: QrCodeData) => void;
+  onSelectForPreview: (qr: QrCodeData) => void;
 }
 
 // ── Channel badge config ──────────────────────────────────────────────────────
@@ -72,16 +73,16 @@ const getDestDesc = (type: string, config: Record<string, any>) => {
 };
 
 // ── QrCard Component ──────────────────────────────────────────────────────────
-export const QrCard: React.FC<QrCardProps> = ({ qr, onEdit, onViewAnalytics, onToggleActive, onDelete }) => {
+export const QrCard: React.FC<QrCardProps> = ({ qr, onEdit, onViewAnalytics, onToggleActive, onDelete, onSelectForPreview }) => {
   const [hovered, setHovered] = useState(false);
   const isExpired   = qr.expires_at ? new Date(qr.expires_at) < new Date() : false;
-  const scansCount  = qr.scans_count ?? 0;
   const isTimeBased = qr.destination_type === 'time_based';
 
   return (
     <div
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
+      onClick={() => onSelectForPreview(qr)}
       style={{
         display: 'flex', flexDirection: 'column', gap: 14,
         backgroundColor: 'var(--color-surface)',
@@ -90,6 +91,7 @@ export const QrCard: React.FC<QrCardProps> = ({ qr, onEdit, onViewAnalytics, onT
         padding: 20,
         transition: 'border-color 100ms ease-out, box-shadow 100ms ease-out',
         boxShadow: hovered ? '0 0 0 1px #2a2a2a, 0 8px 24px rgba(0,0,0,0.4)' : 'none',
+        cursor: 'pointer',
       }}
     >
       {/* Top row: badges + toggle */}
@@ -134,14 +136,14 @@ export const QrCard: React.FC<QrCardProps> = ({ qr, onEdit, onViewAnalytics, onT
             }}>
               /{qr.short_code}
             </span>
-            <a href={qr.short_url} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--color-text-disabled)', display: 'inline-flex' }} title="Visit redirect URL">
+            <a href={qr.short_url} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--color-text-disabled)', display: 'inline-flex' }} title="Visit redirect URL" onClick={(e) => e.stopPropagation()}>
               <ExternalLink size={11} />
             </a>
           </div>
         </div>
 
         {/* Active toggle */}
-        <label className="switch" title="Toggle active status" style={{ flexShrink: 0 }}>
+        <label className="switch" title="Toggle active status" style={{ flexShrink: 0 }} onClick={(e) => e.stopPropagation()}>
           <input type="checkbox" checked={qr.is_active && !isExpired} disabled={isExpired} onChange={() => onToggleActive(qr)} />
           <span className="slider" />
         </label>
@@ -185,10 +187,6 @@ export const QrCard: React.FC<QrCardProps> = ({ qr, onEdit, onViewAnalytics, onT
         fontSize: 12,
       }}>
         <div style={{ display: 'flex', gap: 14, color: 'var(--color-text-secondary)' }}>
-          <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontFamily: 'var(--font-geistmono)', fontWeight: 600 }}>
-            <BarChart3 size={13} />
-            {scansCount.toLocaleString()} scans
-          </span>
           {qr.expires_at && (
             <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
               <Calendar size={12} /> {formatDate(qr.expires_at)}
@@ -197,13 +195,13 @@ export const QrCard: React.FC<QrCardProps> = ({ qr, onEdit, onViewAnalytics, onT
         </div>
 
         {/* Actions */}
-        <div style={{ display: 'flex', gap: 4 }}>
+        <div style={{ display: 'flex', gap: 4 }} onClick={(e) => e.stopPropagation()}>
           <button
             type="button"
             className="btn btn-secondary"
             style={{ padding: '5px 10px', fontSize: 11 }}
             title="View analytics"
-            onClick={() => onViewAnalytics(qr)}
+            onClick={(e) => { e.stopPropagation(); onViewAnalytics(qr); }}
           >
             <Eye size={12} /> Analytics
           </button>
@@ -212,7 +210,7 @@ export const QrCard: React.FC<QrCardProps> = ({ qr, onEdit, onViewAnalytics, onT
             className="btn btn-secondary"
             style={{ padding: '5px 10px', fontSize: 11 }}
             title="Edit QR"
-            onClick={() => onEdit(qr)}
+            onClick={(e) => { e.stopPropagation(); onEdit(qr); }}
           >
             <Settings size={12} />
           </button>
@@ -221,7 +219,7 @@ export const QrCard: React.FC<QrCardProps> = ({ qr, onEdit, onViewAnalytics, onT
             className="btn btn-danger"
             style={{ padding: '5px 10px', fontSize: 11 }}
             title="Delete QR"
-            onClick={() => onDelete(qr)}
+            onClick={(e) => { e.stopPropagation(); onDelete(qr); }}
           >
             <Trash2 size={12} />
           </button>

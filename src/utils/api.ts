@@ -53,11 +53,22 @@ export async function callBackendAction(
     method = 'DELETE';
     restPath = `/api/qr/${input.id}`;
     body = {};
+  } else if (path === '/actions/get-credentials') {
+    method = 'GET';
+    restPath = '/api/client/ga4';
+    body = {};
+  } else if (path === '/actions/upsert-credentials') {
+    method = 'POST';
+    restPath = '/api/client/ga4';
+  } else if (path === '/actions/delete-credentials') {
+    method = 'DELETE';
+    restPath = '/api/client/ga4';
+    body = {};
   }
 
   const response = await backendFetch(restPath, {
     method,
-    body: method !== 'DELETE' ? JSON.stringify(body) : undefined,
+    body: (method !== 'DELETE' && method !== 'GET') ? JSON.stringify(body) : undefined,
   });
 
   if (response.status === 204) return null; // DELETE — no content

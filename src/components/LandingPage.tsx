@@ -46,14 +46,19 @@ function QrMatrix() {
       border: '1px solid #1F1F1F',
       borderRadius: '12px',
       boxShadow: '0 0 0 1px #1F1F1F, 0 0 40px rgba(204,255,0,0.08)',
+      position: 'relative',
+      overflow: 'hidden',
     }}>
+      {/* Laser scan line overlay */}
+      <div className="scan-line" />
+
       {QR_PATTERN.map((row, r) =>
         row.map((cell, c) => {
           const isAccent = cell === 1 && ACCENT_CELLS.has(`${r}-${c}`);
           return (
             <div
               key={`${r}-${c}`}
-              className={isAccent ? 'pulse-glow' : ''}
+              className={`qr-cell ${isAccent ? 'pulse-glow' : ''}`}
               style={{
                 width: 10,
                 height: 10,
@@ -85,30 +90,33 @@ function FeatureCard({ icon, title, desc, accentColor = 'var(--color-accent)' }:
     <div
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
+      className="feature-card-glow"
       style={{
-        backgroundColor: 'var(--color-surface)',
-        border: `1px solid ${hovered ? '#2a2a2a' : 'var(--color-border)'}`,
+        backgroundColor: 'rgba(10, 10, 10, 0.7)',
+        backdropFilter: 'blur(8px)',
+        border: `1px solid ${hovered ? 'transparent' : 'var(--color-border)'}`,
         borderRadius: '12px',
         padding: '24px',
         display: 'flex',
         flexDirection: 'column',
         gap: '12px',
-        transition: 'border-color 100ms ease-out, box-shadow 100ms ease-out',
-        boxShadow: hovered ? '0 0 0 1px #2a2a2a, 0 8px 24px rgba(0,0,0,0.4)' : 'none',
         cursor: 'default',
       }}
     >
-      <div style={{
-        width: 40,
-        height: 40,
-        borderRadius: '8px',
-        backgroundColor: `${accentColor}18`,
-        border: `1px solid ${accentColor}30`,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        color: accentColor,
-      }}>
+      <div
+        className="feature-icon"
+        style={{
+          width: 40,
+          height: 40,
+          borderRadius: '8px',
+          backgroundColor: `${accentColor}18`,
+          border: `1px solid ${accentColor}30`,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: accentColor,
+        }}
+      >
         {icon}
       </div>
       <div>
@@ -121,19 +129,28 @@ function FeatureCard({ icon, title, desc, accentColor = 'var(--color-accent)' }:
 
 // ── Stat Pill ─────────────────────────────────────────────────────────────────
 function StatPill({ value, label }: { value: string; label: string }) {
+  const [hovered, setHovered] = useState(false);
   return (
-    <div style={{
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      gap: 4,
-      padding: '20px 32px',
-      backgroundColor: 'var(--color-surface)',
-      border: '1px solid var(--color-border)',
-      borderRadius: '12px',
-      flex: 1,
-      minWidth: 140,
-    }}>
+    <div
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: 4,
+        padding: '20px 32px',
+        backgroundColor: 'rgba(10, 10, 10, 0.7)',
+        backdropFilter: 'blur(8px)',
+        border: `1px solid ${hovered ? 'var(--color-accent)' : 'var(--color-border)'}`,
+        borderRadius: '12px',
+        flex: 1,
+        minWidth: 140,
+        transform: hovered ? 'translateY(-2px)' : 'none',
+        boxShadow: hovered ? '0 8px 20px rgba(204, 255, 0, 0.05)' : 'none',
+        transition: 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease, box-shadow 0.2s ease',
+      }}
+    >
       <span style={{
         fontFamily: 'var(--font-geistmono)',
         fontSize: 28,
@@ -150,20 +167,27 @@ function StatPill({ value, label }: { value: string; label: string }) {
 function Step({ n, title, desc }: { n: number; title: string; desc: string }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: 12, flex: 1 }}>
-      <div style={{
-        width: 48,
-        height: 48,
-        borderRadius: '50%',
-        backgroundColor: 'var(--color-accent-dim)',
-        border: '1px solid var(--color-accent)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        fontFamily: 'var(--font-geistmono)',
-        fontWeight: 600,
-        fontSize: 18,
-        color: 'var(--color-accent)',
-      }}>{n}</div>
+      <div className="step-number-container">
+        <div
+          className="step-number-pulse"
+          style={{
+            width: 48,
+            height: 48,
+            borderRadius: '50%',
+            backgroundColor: 'var(--color-accent-dim)',
+            border: '1px solid var(--color-accent)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontFamily: 'var(--font-geistmono)',
+            fontWeight: 600,
+            fontSize: 18,
+            color: 'var(--color-accent)',
+          }}
+        >
+          {n}
+        </div>
+      </div>
       <p style={{ fontWeight: 600, color: 'var(--color-text-primary)', fontSize: 15 }}>{title}</p>
       <p style={{ fontSize: 13, color: 'var(--color-text-secondary)', lineHeight: 1.5, maxWidth: 220 }}>{desc}</p>
     </div>
@@ -221,7 +245,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onLogin 
             <button id="landing-login-btn" className="btn btn-secondary" style={{ fontSize: 14 }} onClick={onLogin}>
               Log in
             </button>
-            <button id="landing-signup-btn" className="btn btn-accent" style={{ fontSize: 14 }} onClick={onGetStarted}>
+            <button id="landing-signup-btn" className="btn btn-accent btn-accent-glow" style={{ fontSize: 14 }} onClick={onGetStarted}>
               Get started free
             </button>
           </div>
@@ -230,6 +254,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onLogin 
 
       {/* ── Hero Section ──────────────────────────────────────────────────── */}
       <section className="dot-grid-bg" style={{ padding: '80px 0 96px', position: 'relative', overflow: 'hidden' }}>
+        {/* Ambient float orbs */}
+        <div className="glow-orb-container">
+          <div className="glow-orb glow-orb-1" />
+          <div className="glow-orb glow-orb-2" />
+          <div className="glow-orb glow-orb-3" />
+        </div>
+
         {/* Radial fade overlay */}
         <div style={{
           position: 'absolute', inset: 0,
@@ -244,6 +275,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onLogin 
           textAlign: 'center',
           gap: 32,
           position: 'relative',
+          zIndex: 1,
         }}>
           {/* Badge */}
           <div style={{
@@ -270,8 +302,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onLogin 
             color: 'var(--color-text-primary)',
           }}>
             QR Codes that know{' '}
-            <span style={{
-              color: 'var(--color-accent)',
+            <span className="gradient-text-animated" style={{
               fontStyle: 'italic',
             }}>what time it is.</span>
           </h1>
@@ -290,7 +321,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onLogin 
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
             <button
               id="hero-get-started-btn"
-              className="btn btn-accent"
+              className="btn btn-accent btn-accent-glow"
               style={{ fontSize: 15, padding: '12px 28px', gap: 8 }}
               onClick={onGetStarted}
             >
@@ -455,7 +486,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onLogin 
 
             <button
               id="cta-get-started-btn"
-              className="btn btn-accent"
+              className="btn btn-accent btn-accent-glow"
               style={{ fontSize: 16, padding: '14px 36px', gap: 8 }}
               onClick={onGetStarted}
             >
