@@ -791,3 +791,36 @@ input:checked + .slider::before {
   left: 150%;
 }
 
+/* ── TimeRuleBuilder Day Buttons ───────────────────────────────────────────── */
+.day-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px 12px;
+  font-size: 11px;
+  font-family: var(--font-inter);
+  font-weight: 500;
+  background-color: transparent;
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.day-btn:hover {
+  border-color: var(--color-text-disabled);
+  color: var(--color-text-primary);
+  background-color: var(--color-surface-hover);
+}
+.day-btn.active {
+  background-color: var(--color-accent);
+  color: #000000;
+  border-color: var(--color-accent);
+  font-weight: 600;
+}
+.day-btn.active:hover {
+  background-color: #d9ff1a;
+  border-color: #d9ff1a;
+}
+
+

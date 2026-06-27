@@ -109,29 +109,135 @@ const FocusInput = React.forwardRef<
 });
 FocusInput.displayName = 'FocusInput';
 
-const FocusSelect = (props: React.SelectHTMLAttributes<HTMLSelectElement>) => (
-  <select
-    {...props}
-    style={{
-      ...S.input,
-      appearance: 'none',
-      backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23A1A1AA' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19.5 8.25l-7.5 7.5-7.5-7.5'/%3E%3C/svg%3E")`,
-      backgroundRepeat: 'no-repeat',
-      backgroundPosition: 'right 14px center',
-      backgroundSize: 16,
-      paddingRight: 40,
-      ...props.style,
-    }}
-    onFocus={e => {
-      e.currentTarget.style.borderColor = 'var(--color-accent)';
-      e.currentTarget.style.boxShadow   = '0 0 0 3px var(--color-accent-dim)';
-    }}
-    onBlur={e => {
-      e.currentTarget.style.borderColor = 'var(--color-border)';
-      e.currentTarget.style.boxShadow   = 'none';
-    }}
-  />
-);
+
+export interface CustomSelectOption {
+  value: string;
+  label: string;
+}
+
+export function CustomSelect({ value, options, onChange, style }: {
+  value: string;
+  options: readonly CustomSelectOption[] | CustomSelectOption[];
+  onChange: (value: string) => void;
+  style?: React.CSSProperties;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const selectedOption = options.find(opt => opt.value === value);
+
+  return (
+    <div ref={containerRef} style={{ position: 'relative', width: '100%', ...style }}>
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        style={{
+          ...S.input,
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          cursor: 'pointer',
+          textAlign: 'left',
+          paddingRight: '14px',
+          borderColor: isOpen ? 'var(--color-accent)' : 'var(--color-border)',
+          boxShadow: isOpen ? '0 0 0 3px var(--color-accent-dim)' : 'none',
+        }}
+      >
+        <span>{selectedOption ? selectedOption.label : 'Select...'}</span>
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="var(--color-text-secondary)"
+          strokeWidth="2"
+          style={{
+            width: 16,
+            height: 16,
+            transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+            transition: 'transform 0.2s ease',
+          }}
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+        </svg>
+      </button>
+
+      {isOpen && (
+        <div style={{
+          position: 'absolute',
+          top: 'calc(100% + 4px)',
+          left: 0,
+          width: '100%',
+          maxHeight: '240px',
+          overflowY: 'auto',
+          border: '1px solid var(--color-border)',
+          borderRadius: '6px',
+          backgroundColor: '#080808',
+          boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -2px rgba(0, 0, 0, 0.5)',
+          zIndex: 50,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '1px',
+          padding: '4px',
+        }}>
+          {options.map(opt => {
+            const isSelected = opt.value === value;
+            return (
+              <div
+                key={opt.value}
+                onClick={() => {
+                  onChange(opt.value);
+                  setIsOpen(false);
+                }}
+                style={{
+                  padding: '8px 12px',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontSize: '13px',
+                  fontFamily: 'var(--font-inter)',
+                  backgroundColor: isSelected ? 'var(--color-accent)' : 'transparent',
+                  color: isSelected ? '#000000' : 'var(--color-text-primary)',
+                  fontWeight: isSelected ? 600 : 400,
+                  transition: 'all 0.1s ease-out',
+                }}
+                onMouseEnter={e => {
+                  if (!isSelected) {
+                    e.currentTarget.style.backgroundColor = 'var(--color-surface-hover)';
+                    e.currentTarget.style.color = 'var(--color-accent)';
+                  }
+                }}
+                onMouseLeave={e => {
+                  if (!isSelected) {
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                    e.currentTarget.style.color = 'var(--color-text-primary)';
+                  }
+                }}
+              >
+                {opt.label}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+const FALLBACK_OPTIONS = [
+  { value: 'url', label: 'Website URL' },
+  { value: 'whatsapp', label: 'WhatsApp Chat' },
+  { value: 'call', label: 'AI Call Interface' },
+] as const;
+
 
 const FocusTextarea = (props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) => (
   <textarea
@@ -726,11 +832,11 @@ export const QrForm: React.FC<QrFormProps> = ({ qr, clientID: _clientID, onSave,
                 <p style={{ fontSize: 13, fontWeight: 600, marginBottom: 12, color: 'var(--color-text-primary)' }}>Fallback Destination</p>
                 <div style={{ marginBottom: 12 }}>
                   <label style={S.label}>Fallback Type</label>
-                  <FocusSelect value={defaultType} onChange={e => setDefaultType(e.target.value)}>
-                    <option value="url">Website URL</option>
-                    <option value="whatsapp">WhatsApp Chat</option>
-                    <option value="call">AI Call Interface</option>
-                  </FocusSelect>
+                  <CustomSelect
+                    value={defaultType}
+                    options={FALLBACK_OPTIONS}
+                    onChange={val => setDefaultType(val)}
+                  />
                 </div>
                 {defaultType === 'url' && (
                   <div>
@@ -923,10 +1029,29 @@ export const QrForm: React.FC<QrFormProps> = ({ qr, clientID: _clientID, onSave,
               <span className="tag-chip" style={{ fontFamily: 'var(--font-geistmono)', fontSize: 10 }}>{destinationType}</span>
             </div>
             {destinationType === 'time_based' && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12 }}>
-                <span className="text-muted">TZ:</span>
-                <span className="tag-chip tag-chip-lime" style={{ fontFamily: 'var(--font-geistmono)', fontSize: 10 }}>{timezone}</span>
-              </div>
+              <>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12 }}>
+                  <span className="text-muted">TZ:</span>
+                  <span className="tag-chip tag-chip-lime" style={{ fontFamily: 'var(--font-geistmono)', fontSize: 10 }}>{timezone}</span>
+                </div>
+                {livePreviewText && (
+                  <div style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 4,
+                    marginTop: 6,
+                    padding: '8px 10px',
+                    backgroundColor: 'var(--color-accent-dim)',
+                    border: '1px solid rgba(204,255,0,0.15)',
+                    borderRadius: 6,
+                    fontSize: 11,
+                    textAlign: 'left'
+                  }}>
+                    <span style={{ fontWeight: 600, color: 'var(--color-accent)' }}>Routing Preview</span>
+                    <span style={{ fontFamily: 'var(--font-geistmono)', color: 'var(--color-text-primary)', wordBreak: 'break-all' }}>{livePreviewText}</span>
+                  </div>
+                )}
+              </>
             )}
             {utmSource && (
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12 }}>

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Plus, Trash, ArrowUp, ArrowDown, AlertTriangle } from 'lucide-react';
 import type { TimeRule } from '../utils/routingPreview';
+import { CustomSelect } from './QrForm';
 
 interface TimeRuleBuilderProps {
   rules: TimeRule[];
@@ -8,6 +9,14 @@ interface TimeRuleBuilderProps {
 }
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+const RULE_DEST_OPTIONS = [
+  { value: 'url', label: 'Website URL' },
+  { value: 'whatsapp', label: 'WhatsApp Message' },
+  { value: 'call', label: 'AI Voice Call' },
+  { value: 'email', label: 'Email Prompt' },
+  { value: 'vcard', label: 'vCard Contact Download' },
+] as const;
 
 export const TimeRuleBuilder: React.FC<TimeRuleBuilderProps> = ({ rules, onChange }) => {
   const addRule = () => {
@@ -136,15 +145,7 @@ export const TimeRuleBuilder: React.FC<TimeRuleBuilderProps> = ({ rules, onChang
                         <button
                           key={day}
                           type="button"
-                          className="btn"
-                          style={{
-                            padding: '4px 10px',
-                            fontSize: '11px',
-                            backgroundColor: active ? 'var(--color-ink-black)' : 'var(--color-smoke-50)',
-                            color: active ? 'var(--color-paper-white)' : 'var(--color-smoke-700)',
-                            border: `1px solid ${active ? 'var(--color-ink-black)' : 'var(--color-smoke-200)'}`,
-                            borderRadius: '4px'
-                          }}
+                          className={`day-btn ${active ? 'active' : ''}`}
                           onClick={() => toggleDay(idx, dIdx)}
                         >
                           {day}
@@ -202,12 +203,10 @@ export const TimeRuleBuilder: React.FC<TimeRuleBuilderProps> = ({ rules, onChang
                 <div style={{ borderTop: '1px solid var(--color-smoke-100)', paddingTop: 'var(--spacing-12)', marginTop: 'var(--spacing-12)' }}>
                   <div className="form-group" style={{ marginBottom: 'var(--spacing-12)' }}>
                     <label className="form-label" style={{ fontSize: 'var(--text-caption)' }}>Destination Type</label>
-                    <select
-                      className="form-input form-select"
-                      style={{ padding: '8px 12px' }}
+                    <CustomSelect
                       value={rule.destination_type || 'url'}
-                      onChange={e => {
-                        const newType = e.target.value;
+                      options={RULE_DEST_OPTIONS}
+                      onChange={val => {
                         const defaultConfigs: Record<string, any> = {
                           url: { url: 'https://' },
                           whatsapp: { phone: '+91', message: 'Hello' },
@@ -215,16 +214,19 @@ export const TimeRuleBuilder: React.FC<TimeRuleBuilderProps> = ({ rules, onChang
                           email: { to: '', subject: 'Inquiry', body: '' },
                           vcard: { name: '', phone: '', email: '', company: '', website: '', note: '' }
                         };
-                        updateRuleField(idx, 'destination_type', newType);
-                        updateRuleField(idx, 'destination_config', defaultConfigs[newType]);
+                        const updated = rules.map((r, i) => {
+                          if (i === idx) {
+                            return {
+                              ...r,
+                              destination_type: val as any,
+                              destination_config: defaultConfigs[val]
+                            };
+                          }
+                          return r;
+                        });
+                        onChange(updated);
                       }}
-                    >
-                      <option value="url">Website URL</option>
-                      <option value="whatsapp">WhatsApp Message</option>
-                      <option value="call">AI Voice Call</option>
-                      <option value="email">Email Prompt</option>
-                      <option value="vcard">vCard Contact Download</option>
-                    </select>
+                    />
                   </div>
 
                   {/* Dynamic fields based on rule.destination_type */}
