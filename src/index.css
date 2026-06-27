@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Outfit:wght@500;600&display=swap');
+/* Fonts are now loaded in index.html for better performance */
 
 :root {
   /* ── Core Palette (design.md) ─────────────────────────────────────────── */
@@ -161,6 +161,13 @@ a {
   color: inherit;
   text-decoration: none;
 }
+
+/* ── Accessibility ──────────────────────────────────────────────────────────── */
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
 
 /* ── Custom Scrollbar ──────────────────────────────────────────────────────── */
 ::-webkit-scrollbar { width: 6px; height: 6px; }

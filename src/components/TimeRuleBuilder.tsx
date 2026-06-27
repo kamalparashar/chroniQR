@@ -123,14 +123,14 @@ export const TimeRuleBuilder: React.FC<TimeRuleBuilderProps> = ({ rules, onChang
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--spacing-12)', paddingBottom: 'var(--spacing-8)', borderBottom: '1px solid var(--color-smoke-100)' }}>
                   <span className="font-mono text-caption" style={{ fontWeight: 600 }}>Rule #{idx + 1}</span>
                   <div style={{ display: 'flex', gap: 'var(--spacing-8)' }}>
-                    <button type="button" className="btn btn-secondary" style={{ padding: '4px 8px', borderRadius: '4px' }} disabled={idx === 0} onClick={() => moveRule(idx, 'up')}>
-                      <ArrowUp size={14} />
+                    <button type="button" className="btn btn-secondary" style={{ padding: '4px 8px', borderRadius: '4px' }} disabled={idx === 0} onClick={() => moveRule(idx, 'up')} aria-label="Move rule up">
+                      <ArrowUp size={14} aria-hidden="true" />
                     </button>
-                    <button type="button" className="btn btn-secondary" style={{ padding: '4px 8px', borderRadius: '4px' }} disabled={idx === rules.length - 1} onClick={() => moveRule(idx, 'down')}>
-                      <ArrowDown size={14} />
+                    <button type="button" className="btn btn-secondary" style={{ padding: '4px 8px', borderRadius: '4px' }} disabled={idx === rules.length - 1} onClick={() => moveRule(idx, 'down')} aria-label="Move rule down">
+                      <ArrowDown size={14} aria-hidden="true" />
                     </button>
-                    <button type="button" className="btn btn-danger" style={{ padding: '4px 8px', borderRadius: '4px' }} onClick={() => removeRule(idx)}>
-                      <Trash size={14} />
+                    <button type="button" className="btn btn-danger" style={{ padding: '4px 8px', borderRadius: '4px' }} onClick={() => removeRule(idx)} aria-label="Delete rule">
+                      <Trash size={14} aria-hidden="true" />
                     </button>
                   </div>
                 </div>
@@ -147,6 +147,7 @@ export const TimeRuleBuilder: React.FC<TimeRuleBuilderProps> = ({ rules, onChang
                           type="button"
                           className={`day-btn ${active ? 'active' : ''}`}
                           onClick={() => toggleDay(idx, dIdx)}
+                          aria-pressed={active}
                         >
                           {day}
                         </button>

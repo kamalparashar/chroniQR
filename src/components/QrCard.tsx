@@ -201,27 +201,30 @@ export const QrCard: React.FC<QrCardProps> = ({ qr, onEdit, onViewAnalytics, onT
             className="btn btn-secondary"
             style={{ padding: '5px 10px', fontSize: 11 }}
             title="View analytics"
+            aria-label="View analytics"
             onClick={(e) => { e.stopPropagation(); onViewAnalytics(qr); }}
           >
-            <Eye size={12} /> Analytics
+            <Eye size={12} aria-hidden="true" /> Analytics
           </button>
           <button
             type="button"
             className="btn btn-secondary"
             style={{ padding: '5px 10px', fontSize: 11 }}
             title="Edit QR"
+            aria-label="Edit QR"
             onClick={(e) => { e.stopPropagation(); onEdit(qr); }}
           >
-            <Settings size={12} />
+            <Settings size={12} aria-hidden="true" />
           </button>
           <button
             type="button"
             className="btn btn-danger"
             style={{ padding: '5px 10px', fontSize: 11 }}
             title="Delete QR"
+            aria-label="Delete QR"
             onClick={(e) => { e.stopPropagation(); onDelete(qr); }}
           >
-            <Trash2 size={12} />
+            <Trash2 size={12} aria-hidden="true" />
           </button>
         </div>
       </div>

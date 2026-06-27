@@ -87,6 +87,7 @@ export const QrPreviewModal: React.FC<QrPreviewModalProps> = ({ qr, onClose }) =
           </h3>
           <button
             onClick={onClose}
+            aria-label="Close modal"
             style={{
               background: 'none',
               border: 'none',
