@@ -1,417 +1,29 @@
 import React, { useState, useEffect, useRef } from 'react';
 import QRCode from 'qrcode';
-import { RefreshCw, AlertTriangle, Globe, MessageSquare, Phone, Mail, User, Clock, Check } from 'lucide-react';
-import { TimeRuleBuilder } from './TimeRuleBuilder';
+import { RefreshCw, AlertTriangle, Check } from 'lucide-react';
 import { resolveTimeBasedPreview } from '../utils/routingPreview';
-import type { TimeRule } from '../utils/routingPreview';
-import type { QrCodeData } from './QrCard';
+import type { QrCodeData, QrFormPayload, DestinationType, TimeRule } from '../types/qr';
+import { DEST_TYPES } from '../constants/destinations';
+import { DETECTED_TZ } from '../constants/timezones';
 
 interface QrFormProps {
   qr: QrCodeData | null;
   clientID: string;
-  onSave: (qrData: any) => Promise<void>;
+  onSave: (qrData: QrFormPayload) => Promise<void>;
   onCancel: () => void;
 }
 
-// ── All IANA timezones from browser ─────────────────────────────────────────
-const ALL_TIMEZONES: string[] = (() => {
-  try {
-    return (Intl as any).supportedValuesOf('timeZone') as string[];
-  } catch {
-    // Fallback for older browsers
-    return [
-      'UTC','Africa/Cairo','America/Chicago','America/Los_Angeles','America/New_York',
-      'America/Sao_Paulo','Asia/Dubai','Asia/Kolkata','Asia/Singapore','Asia/Tokyo',
-      'Australia/Sydney','Europe/Berlin','Europe/London','Europe/Paris',
-    ];
-  }
-})();
-
-const getGmtOffset = (tz: string): string => {
-  try {
-    const formatter = new Intl.DateTimeFormat('en-US', {
-      timeZone: tz,
-      timeZoneName: 'longOffset',
-    });
-    const parts = formatter.formatToParts(new Date());
-    const offsetPart = parts.find(p => p.type === 'timeZoneName');
-    return offsetPart ? offsetPart.value : '';
-  } catch {
-    return '';
-  }
-};
-
-const TZ_OPTIONS = ALL_TIMEZONES.map(tz => {
-  const offset = getGmtOffset(tz);
-  return {
-    name: tz,
-    offset,
-  };
-});
-
-const DETECTED_TZ = Intl.DateTimeFormat().resolvedOptions().timeZone;
-
-// ── Destination type card definitions ────────────────────────────────────────
-const DEST_TYPES = [
-  { value: 'url',        label: 'Website URL',     desc: 'Redirect to any HTTPS URL', icon: Globe,         color: '#60A5FA' },
-  { value: 'whatsapp',   label: 'WhatsApp',        desc: 'Open a WhatsApp chat',      icon: MessageSquare, color: '#25D366' },
-  { value: 'call',       label: 'AI Voice Call',   desc: 'Click-to-call or callback', icon: Phone,         color: '#7C3AED' },
-  { value: 'email',      label: 'Email',           desc: 'Pre-fill email template',   icon: Mail,          color: '#3B82F6' },
-  { value: 'vcard',      label: 'vCard Contact',   desc: 'Download contact card',     icon: User,          color: '#EA580C' },
-  { value: 'time_based', label: 'Time-Based',      desc: 'Route by hour & day rules', icon: Clock,         color: '#CCFF00' },
-] as const;
-
-type DestType = typeof DEST_TYPES[number]['value'];
-
-// ── Reusable dark input style ────────────────────────────────────────────────
-const S = {
-  input: {
-    width: '100%',
-    fontFamily: 'var(--font-inter)',
-    fontSize: 14,
-    color: 'var(--color-text-primary)',
-    backgroundColor: '#080808',
-    border: '1px solid var(--color-border)',
-    borderRadius: 6,
-    padding: '11px 14px',
-    outline: 'none',
-  } as React.CSSProperties,
-  label: {
-    display: 'block',
-    fontSize: 13,
-    fontWeight: 500,
-    color: 'var(--color-text-secondary)',
-    marginBottom: 6,
-  } as React.CSSProperties,
-};
-
-const FocusInput = React.forwardRef<
-  HTMLInputElement,
-  React.InputHTMLAttributes<HTMLInputElement>
->((props, ref) => {
-  const localRef = useRef<HTMLInputElement>(null);
-  const resolvedRef = (ref as React.RefObject<HTMLInputElement>) || localRef;
-  return (
-    <input
-      ref={resolvedRef}
-      {...props}
-      style={{ ...S.input, ...props.style }}
-      onFocus={e => {
-        e.currentTarget.style.borderColor = 'var(--color-accent)';
-        e.currentTarget.style.boxShadow   = '0 0 0 3px var(--color-accent-dim)';
-      }}
-      onBlur={e => {
-        e.currentTarget.style.borderColor = 'var(--color-border)';
-        e.currentTarget.style.boxShadow   = 'none';
-      }}
-    />
-  );
-});
-FocusInput.displayName = 'FocusInput';
 
 
-export interface CustomSelectOption {
-  value: string;
-  label: string;
-}
-
-export function CustomSelect({ value, options, onChange, style }: {
-  value: string;
-  options: readonly CustomSelectOption[] | CustomSelectOption[];
-  onChange: (value: string) => void;
-  style?: React.CSSProperties;
-}) {
-  const [isOpen, setIsOpen] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  const selectedOption = options.find(opt => opt.value === value);
-
-  return (
-    <div ref={containerRef} style={{ position: 'relative', width: '100%', ...style }}>
-      <button
-        type="button"
-        onClick={() => setIsOpen(!isOpen)}
-        style={{
-          ...S.input,
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          cursor: 'pointer',
-          textAlign: 'left',
-          paddingRight: '14px',
-          borderColor: isOpen ? 'var(--color-accent)' : 'var(--color-border)',
-          boxShadow: isOpen ? '0 0 0 3px var(--color-accent-dim)' : 'none',
-        }}
-      >
-        <span>{selectedOption ? selectedOption.label : 'Select...'}</span>
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="var(--color-text-secondary)"
-          strokeWidth="2"
-          style={{
-            width: 16,
-            height: 16,
-            transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
-            transition: 'transform 0.2s ease',
-          }}
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-        </svg>
-      </button>
-
-      {isOpen && (
-        <div style={{
-          position: 'absolute',
-          top: 'calc(100% + 4px)',
-          left: 0,
-          width: '100%',
-          maxHeight: '240px',
-          overflowY: 'auto',
-          border: '1px solid var(--color-border)',
-          borderRadius: '6px',
-          backgroundColor: '#080808',
-          boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -2px rgba(0, 0, 0, 0.5)',
-          zIndex: 50,
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '1px',
-          padding: '4px',
-        }}>
-          {options.map(opt => {
-            const isSelected = opt.value === value;
-            return (
-              <div
-                key={opt.value}
-                onClick={() => {
-                  onChange(opt.value);
-                  setIsOpen(false);
-                }}
-                style={{
-                  padding: '8px 12px',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  fontSize: '13px',
-                  fontFamily: 'var(--font-inter)',
-                  backgroundColor: isSelected ? 'var(--color-accent)' : 'transparent',
-                  color: isSelected ? '#000000' : 'var(--color-text-primary)',
-                  fontWeight: isSelected ? 600 : 400,
-                  transition: 'all 0.1s ease-out',
-                }}
-                onMouseEnter={e => {
-                  if (!isSelected) {
-                    e.currentTarget.style.backgroundColor = 'var(--color-surface-hover)';
-                    e.currentTarget.style.color = 'var(--color-accent)';
-                  }
-                }}
-                onMouseLeave={e => {
-                  if (!isSelected) {
-                    e.currentTarget.style.backgroundColor = 'transparent';
-                    e.currentTarget.style.color = 'var(--color-text-primary)';
-                  }
-                }}
-              >
-                {opt.label}
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
-}
-
-const FALLBACK_OPTIONS = [
-  { value: 'url', label: 'Website URL' },
-  { value: 'whatsapp', label: 'WhatsApp Chat' },
-  { value: 'call', label: 'AI Call Interface' },
-] as const;
-
-
-const FocusTextarea = (props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) => (
-  <textarea
-    {...props}
-    style={{ ...S.input, resize: 'vertical', ...props.style }}
-    onFocus={e => {
-      e.currentTarget.style.borderColor = 'var(--color-accent)';
-      e.currentTarget.style.boxShadow   = '0 0 0 3px var(--color-accent-dim)';
-    }}
-    onBlur={e => {
-      e.currentTarget.style.borderColor = 'var(--color-border)';
-      e.currentTarget.style.boxShadow   = 'none';
-    }}
-  />
-);
-
-// ── Timezone picker sub-component ────────────────────────────────────────────
-function TimezonePicker({ value, onChange }: { value: string; onChange: (tz: string) => void }) {
-  const [overrideOpen, setOverrideOpen] = useState(false);
-  const [search, setSearch] = useState('');
-
-  const filtered = search.trim()
-    ? TZ_OPTIONS.filter(tz =>
-        tz.name.toLowerCase().includes(search.toLowerCase()) ||
-        tz.offset.toLowerCase().includes(search.toLowerCase())
-      )
-    : TZ_OPTIONS;
-
-  const isAutoDetected = value === DETECTED_TZ;
-  const currentOffset = getGmtOffset(value);
-
-  return (
-    <div>
-      {/* Auto-detected badge */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: 6,
-          padding: '6px 12px',
-          backgroundColor: isAutoDetected ? 'var(--color-accent-dim)' : 'var(--color-surface-hover)',
-          border: `1px solid ${isAutoDetected ? 'rgba(204,255,0,0.2)' : 'var(--color-border)'}`,
-          borderRadius: 6,
-          fontSize: 13,
-          fontFamily: 'var(--font-geistmono)',
-          color: isAutoDetected ? 'var(--color-accent)' : 'var(--color-text-primary)',
-        }}>
-          <Globe size={13} />
-          <span>{value}</span>
-          {currentOffset && (
-            <span style={{
-              fontSize: '11px',
-              opacity: 0.8,
-              marginLeft: '4px',
-              fontVariantNumeric: 'tabular-nums'
-            }}>({currentOffset})</span>
-          )}
-          {isAutoDetected && (
-            <span style={{
-              fontSize: 10, fontWeight: 600,
-              backgroundColor: 'var(--color-accent)', color: '#000',
-              borderRadius: 3, padding: '1px 5px', marginLeft: 4,
-            }}>AUTO</span>
-          )}
-        </div>
-
-        <button
-          type="button"
-          onClick={() => setOverrideOpen(o => !o)}
-          style={{
-            background: 'none', border: 'none', cursor: 'pointer',
-            fontSize: 12, color: 'var(--color-text-secondary)',
-            textDecoration: 'underline', padding: 0,
-          }}
-        >
-          {overrideOpen ? 'Cancel override' : 'Override timezone'}
-        </button>
-
-        {!isAutoDetected && (
-          <button
-            type="button"
-            onClick={() => { onChange(DETECTED_TZ); setSearch(''); setOverrideOpen(false); }}
-            style={{
-              background: 'none', border: 'none', cursor: 'pointer',
-              fontSize: 12, color: 'var(--color-accent)', padding: 0,
-            }}
-          >
-            Reset to auto
-          </button>
-        )}
-      </div>
-
-      {overrideOpen && (
-        <div>
-          <FocusInput
-            type="text"
-            placeholder="Search timezone… (e.g. Kolkata, Tokyo, New_York)"
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            style={{ marginBottom: 6 }}
-          />
-          <div style={{
-            maxHeight: '180px',
-            overflowY: 'auto',
-            border: '1px solid var(--color-border)',
-            borderRadius: '6px',
-            backgroundColor: '#080808',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '1px',
-            padding: '4px',
-          }}>
-            {filtered.slice(0, 100).map(tz => {
-              const isSelected = tz.name === value;
-              return (
-                <div
-                  key={tz.name}
-                  onClick={() => { onChange(tz.name); setSearch(''); setOverrideOpen(false); }}
-                  style={{
-                    padding: '8px 12px',
-                    borderRadius: '4px',
-                    cursor: 'pointer',
-                    fontSize: '13px',
-                    fontFamily: 'var(--font-geistmono)',
-                    backgroundColor: isSelected ? 'var(--color-accent)' : 'transparent',
-                    color: isSelected ? '#000000' : 'var(--color-text-primary)',
-                    fontWeight: isSelected ? 600 : 400,
-                    transition: 'all 0.1s ease-out',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                  }}
-                  onMouseEnter={e => {
-                    if (!isSelected) {
-                      e.currentTarget.style.backgroundColor = 'var(--color-surface-hover)';
-                      e.currentTarget.style.color = 'var(--color-accent)';
-                    }
-                  }}
-                  onMouseLeave={e => {
-                    if (!isSelected) {
-                      e.currentTarget.style.backgroundColor = 'transparent';
-                      e.currentTarget.style.color = 'var(--color-text-primary)';
-                    }
-                  }}
-                >
-                  <span>{tz.name}</span>
-                  <span style={{
-                    fontSize: '11px',
-                    color: isSelected ? 'rgba(0,0,0,0.6)' : 'var(--color-text-secondary)',
-                    marginLeft: '8px',
-                    fontVariantNumeric: 'tabular-nums'
-                  }}>{tz.offset}</span>
-                </div>
-              );
-            })}
-            {filtered.length === 0 && (
-              <div style={{ padding: '8px 12px', fontSize: '13px', color: 'var(--color-text-disabled)' }}>
-                No timezones found.
-              </div>
-            )}
-          </div>
-          {filtered.length > 100 && (
-            <p style={{ fontSize: 11, color: 'var(--color-text-secondary)', marginTop: 4 }}>
-              Showing first 100 of {filtered.length} — refine your search.
-            </p>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
+import { FocusInput, S } from './ui/FocusInput';
+import { DestinationFields } from './qr-form/DestinationFields';
+import { ConstraintEditor } from './qr-form/ConstraintEditor';
+import { MetadataFields } from './qr-form/MetadataFields';
 
 // ── Main QrForm ───────────────────────────────────────────────────────────────
 export const QrForm: React.FC<QrFormProps> = ({ qr, clientID: _clientID, onSave, onCancel }) => {
   const [name, setName]                       = useState('');
-  const [destinationType, setDestinationType] = useState<DestType>('url');
+  const [destinationType, setDestinationType] = useState<DestinationType>('url');
 
   // URL
   const [url, setUrl] = useState('https://');
@@ -473,7 +85,7 @@ export const QrForm: React.FC<QrFormProps> = ({ qr, clientID: _clientID, onSave,
   useEffect(() => {
     if (!qr) return;
     setName(qr.name);
-    setDestinationType(qr.destination_type as DestType);
+    setDestinationType(qr.destination_type as DestinationType);
     setUtmSource(qr.utm_config?.utm_source || '');
     setUtmMedium(qr.utm_config?.utm_medium || '');
     setUtmCampaign(qr.utm_config?.utm_campaign || '');
@@ -728,265 +340,55 @@ export const QrForm: React.FC<QrFormProps> = ({ qr, clientID: _clientID, onSave,
         {/* Destination Config */}
         <div style={sectionCard}>
           <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-text-primary)' }}>Destination Config</p>
-
-          {destinationType === 'url' && (
-            <div>
-              <label style={S.label}>Destination URL</label>
-              <FocusInput
-                type="url"
-                value={url}
-                placeholder="https://example.com/promo"
-                onChange={e => setUrl(e.target.value)}
-                style={{ fontFamily: 'var(--font-geistmono)', fontSize: 13 }}
-                required
-              />
-              <p className="text-muted" style={{ fontSize: 11, marginTop: 4 }}>Scanners are redirected to this URL (with UTM params appended).</p>
-            </div>
-          )}
-
-          {destinationType === 'whatsapp' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-              <div>
-                <label style={S.label}>WhatsApp Number (E.164)</label>
-                <FocusInput type="tel" value={waPhone} placeholder="+919876543210" onChange={e => setWaPhone(e.target.value)} required />
-              </div>
-              <div>
-                <label style={S.label}>Default Message</label>
-                <FocusTextarea rows={3} value={waMsg} placeholder="Hello, I'd like to inquire about…" onChange={e => setWaMsg(e.target.value)} />
-              </div>
-            </div>
-          )}
-
-          {destinationType === 'call' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-              <div>
-                <label style={S.label}>AI Agent Number (E.164)</label>
-                <FocusInput type="tel" value={callNumber} placeholder="+14155552671" onChange={e => setCallNumber(e.target.value)} required />
-              </div>
-              <div>
-                <label style={S.label}>Landing Page CTA Text</label>
-                <FocusInput type="text" value={callCta} placeholder="Connect with our AI assistant" maxLength={120} onChange={e => setCallCta(e.target.value)} />
-              </div>
-            </div>
-          )}
-
-          {destinationType === 'email' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-              <div>
-                <label style={S.label}>To Email Address</label>
-                <FocusInput type="email" value={emailTo} placeholder="info@company.com" onChange={e => setEmailTo(e.target.value)} required />
-              </div>
-              <div>
-                <label style={S.label}>Subject</label>
-                <FocusInput type="text" value={emailSub} placeholder="Inquiry" maxLength={255} onChange={e => setEmailSub(e.target.value)} />
-              </div>
-              <div>
-                <label style={S.label}>Body Template</label>
-                <FocusTextarea rows={3} value={emailBody} placeholder="I am interested in…" onChange={e => setEmailBody(e.target.value)} />
-              </div>
-            </div>
-          )}
-
-          {destinationType === 'vcard' && (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-              <div>
-                <label style={S.label}>Display Name</label>
-                <FocusInput type="text" value={vcName} placeholder="Jane Doe" onChange={e => setVcName(e.target.value)} required />
-              </div>
-              <div>
-                <label style={S.label}>Phone</label>
-                <FocusInput type="tel" value={vcPhone} placeholder="+14155551212" onChange={e => setVcPhone(e.target.value)} />
-              </div>
-              <div>
-                <label style={S.label}>Email</label>
-                <FocusInput type="email" value={vcEmail} placeholder="jane@company.com" onChange={e => setVcEmail(e.target.value)} />
-              </div>
-              <div>
-                <label style={S.label}>Company</label>
-                <FocusInput type="text" value={vcCompany} placeholder="Acme Corp" onChange={e => setVcCompany(e.target.value)} />
-              </div>
-              <div style={{ gridColumn: 'span 2' }}>
-                <label style={S.label}>Website</label>
-                <FocusInput type="url" value={vcWebsite} placeholder="https://acme.com" onChange={e => setVcWebsite(e.target.value)} />
-              </div>
-              <div style={{ gridColumn: 'span 2' }}>
-                <label style={S.label}>Note</label>
-                <FocusTextarea rows={2} value={vcNote} placeholder="Dynamic contact card from chroniQR" onChange={e => setVcNote(e.target.value)} />
-              </div>
-            </div>
-          )}
-
-          {destinationType === 'time_based' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-              {/* Timezone */}
-              <div>
-                <label style={S.label}>Evaluation Timezone</label>
-                <TimezonePicker value={timezone} onChange={setTimezone} />
-              </div>
-
-              {/* Rule Builder */}
-              <TimeRuleBuilder rules={rules} onChange={setRules} />
-
-              {/* Fallback */}
-              <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: 16 }}>
-                <p style={{ fontSize: 13, fontWeight: 600, marginBottom: 12, color: 'var(--color-text-primary)' }}>Fallback Destination</p>
-                <div style={{ marginBottom: 12 }}>
-                  <label style={S.label}>Fallback Type</label>
-                  <CustomSelect
-                    value={defaultType}
-                    options={FALLBACK_OPTIONS}
-                    onChange={val => setDefaultType(val)}
-                  />
-                </div>
-                {defaultType === 'url' && (
-                  <div>
-                    <label style={S.label}>Fallback URL</label>
-                    <FocusInput type="url" value={defaultUrl} placeholder="https://example.com/closed" onChange={e => setDefaultUrl(e.target.value)} style={{ fontFamily: 'var(--font-geistmono)', fontSize: 13 }} required />
-                  </div>
-                )}
-                {defaultType === 'whatsapp' && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                    <div>
-                      <label style={S.label}>Phone (E.164)</label>
-                      <FocusInput type="tel" value={defaultWaPhone} placeholder="+919876543210" onChange={e => setDefaultWaPhone(e.target.value)} required />
-                    </div>
-                    <div>
-                      <label style={S.label}>Message</label>
-                      <FocusInput type="text" value={defaultWaMsg} placeholder="We are closed…" onChange={e => setDefaultWaMsg(e.target.value)} />
-                    </div>
-                  </div>
-                )}
-                {defaultType === 'call' && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                    <div>
-                      <label style={S.label}>Caller Number (E.164)</label>
-                      <FocusInput type="tel" value={defaultCallNumber} placeholder="+14155552671" onChange={e => setDefaultCallNumber(e.target.value)} required />
-                    </div>
-                    <div>
-                      <label style={S.label}>CTA Text</label>
-                      <FocusInput type="text" value={defaultCallCta} placeholder="Office closed — schedule a callback" onChange={e => setDefaultCallCta(e.target.value)} />
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Live Preview */}
-              {livePreviewText && (
-                <div style={{
-                  backgroundColor: '#080808',
-                  border: '1px solid var(--color-border)',
-                  padding: '10px 14px',
-                  borderRadius: 6,
-                  fontSize: 13,
-                  fontFamily: 'var(--font-geistmono)',
-                  color: 'var(--color-accent)',
-                }}>
-                  ⚡ {livePreviewText}
-                </div>
-              )}
-            </div>
-          )}
+          <DestinationFields 
+            destinationType={destinationType}
+            url={url} setUrl={setUrl}
+            waPhone={waPhone} setWaPhone={setWaPhone}
+            waMsg={waMsg} setWaMsg={setWaMsg}
+            callNumber={callNumber} setCallNumber={setCallNumber}
+            callCta={callCta} setCallCta={setCallCta}
+            emailTo={emailTo} setEmailTo={setEmailTo}
+            emailSub={emailSub} setEmailSub={setEmailSub}
+            emailBody={emailBody} setEmailBody={setEmailBody}
+            vcName={vcName} setVcName={setVcName}
+            vcPhone={vcPhone} setVcPhone={setVcPhone}
+            vcEmail={vcEmail} setVcEmail={setVcEmail}
+            vcCompany={vcCompany} setVcCompany={setVcCompany}
+            vcWebsite={vcWebsite} setVcWebsite={setVcWebsite}
+            vcNote={vcNote} setVcNote={setVcNote}
+            timezone={timezone} setTimezone={setTimezone}
+            rules={rules} setRules={setRules}
+            defaultType={defaultType} setDefaultType={setDefaultType}
+            defaultUrl={defaultUrl} setDefaultUrl={setDefaultUrl}
+            defaultWaPhone={defaultWaPhone} setDefaultWaPhone={setDefaultWaPhone}
+            defaultWaMsg={defaultWaMsg} setDefaultWaMsg={setDefaultWaMsg}
+            defaultCallNumber={defaultCallNumber} setDefaultCallNumber={setDefaultCallNumber}
+            defaultCallCta={defaultCallCta} setDefaultCallCta={setDefaultCallCta}
+            livePreviewText={livePreviewText}
+          />
         </div>
 
-        {/* Time Constraints (non-time_based) */}
-        {destinationType !== 'time_based' && (
-          <div style={sectionCard}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div>
-                <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-text-primary)' }}>Time Constraints</p>
-                <p className="text-muted" style={{ fontSize: 12, marginTop: 2 }}>Restrict this QR to specific hours/days.</p>
-              </div>
-              <label className="switch">
-                <input type="checkbox" checked={hasConstraints} onChange={e => setHasConstraints(e.target.checked)} />
-                <span className="slider" />
-              </label>
-            </div>
+        {/* Time Constraints */}
+        <ConstraintEditor 
+          destinationType={destinationType}
+          hasConstraints={hasConstraints} setHasConstraints={setHasConstraints}
+          constraintTimezone={constraintTimezone} setConstraintTimezone={setConstraintTimezone}
+          constraintDays={constraintDays} toggleConstraintDay={toggleConstraintDay}
+          constraintStart={constraintStart} setConstraintStart={setConstraintStart}
+          constraintEnd={constraintEnd} setConstraintEnd={setConstraintEnd}
+          sectionCardStyle={sectionCard}
+        />
 
-            {hasConstraints && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 14, borderTop: '1px solid var(--color-border)', paddingTop: 14 }}>
-                <div>
-                  <label style={S.label}>Timezone</label>
-                  <TimezonePicker value={constraintTimezone} onChange={setConstraintTimezone} />
-                </div>
-                <div>
-                  <label style={S.label}>Active Days</label>
-                  <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-                    {['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map((day, idx) => {
-                      const active = constraintDays.includes(idx);
-                      return (
-                        <button
-                          key={idx}
-                          type="button"
-                          onClick={() => toggleConstraintDay(idx)}
-                          style={{
-                            padding: '5px 10px', fontSize: 11, borderRadius: 4, border: 'none', cursor: 'pointer',
-                            backgroundColor: active ? 'var(--color-accent)' : 'var(--color-surface-hover)',
-                            color: active ? '#000' : 'var(--color-text-secondary)',
-                            fontWeight: active ? 700 : 400,
-                            transition: 'all 100ms',
-                          }}
-                        >{day}</button>
-                      );
-                    })}
-                  </div>
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                  <div>
-                    <label style={S.label}>Start Time</label>
-                    <FocusInput type="text" value={constraintStart} placeholder="09:00" onChange={e => setConstraintStart(e.target.value)} />
-                  </div>
-                  <div>
-                    <label style={S.label}>End Time</label>
-                    <FocusInput type="text" value={constraintEnd} placeholder="17:00" onChange={e => setConstraintEnd(e.target.value)} />
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* UTM Config */}
-        <div style={sectionCard}>
-          <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-text-primary)' }}>UTM Attribution</p>
-          <p className="text-muted" style={{ fontSize: 12, marginTop: -8 }}>Parameters appended to destination URLs automatically.</p>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-            <div>
-              <label style={S.label}>Source</label>
-              <FocusInput type="text" value={utmSource} placeholder="qr_code" onChange={e => setUtmSource(e.target.value)} style={{ fontFamily: 'var(--font-geistmono)', fontSize: 13 }} />
-            </div>
-            <div>
-              <label style={S.label}>Medium</label>
-              <FocusInput type="text" value={utmMedium} placeholder="print" onChange={e => setUtmMedium(e.target.value)} style={{ fontFamily: 'var(--font-geistmono)', fontSize: 13 }} />
-            </div>
-            <div style={{ gridColumn: 'span 2' }}>
-              <label style={S.label}>Campaign</label>
-              <FocusInput type="text" value={utmCampaign} placeholder="summer_2026_newsletter" onChange={e => setUtmCampaign(e.target.value)} style={{ fontFamily: 'var(--font-geistmono)', fontSize: 13 }} />
-            </div>
-          </div>
-        </div>
-
-        {/* Metadata */}
-        <div style={sectionCard}>
-          <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-text-primary)' }}>Metadata & Analytics</p>
-          <div>
-            <label style={S.label}>Tags (comma separated)</label>
-            <FocusInput type="text" value={tagsInput} placeholder="newsletter, marketing, print_run_1" onChange={e => setTagsInput(e.target.value)} />
-          </div>
-          <div>
-            <label style={S.label}>Expiration Date / Time</label>
-            <FocusInput type="datetime-local" value={expiresAt} onChange={e => setExpiresAt(e.target.value)} />
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--color-border)', paddingTop: 14 }}>
-            <div>
-              <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--color-text-primary)' }}>GA4 Measurement Tracking</p>
-              <p className="text-muted" style={{ fontSize: 11, marginTop: 2 }}>Fires real-time events to Google Analytics.</p>
-            </div>
-            <label className="switch">
-              <input type="checkbox" checked={ga4Enabled} onChange={e => setGa4Enabled(e.target.checked)} />
-              <span className="slider" />
-            </label>
-          </div>
-        </div>
+        {/* UTM & Metadata Config */}
+        <MetadataFields 
+          utmSource={utmSource} setUtmSource={setUtmSource}
+          utmMedium={utmMedium} setUtmMedium={setUtmMedium}
+          utmCampaign={utmCampaign} setUtmCampaign={setUtmCampaign}
+          tagsInput={tagsInput} setTagsInput={setTagsInput}
+          expiresAt={expiresAt} setExpiresAt={setExpiresAt}
+          ga4Enabled={ga4Enabled} setGa4Enabled={setGa4Enabled}
+          sectionCardStyle={sectionCard}
+        />
 
         {/* Actions */}
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, marginTop: 8 }}>

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Plus, Trash, ArrowUp, ArrowDown, AlertTriangle } from 'lucide-react';
-import type { TimeRule } from '../utils/routingPreview';
-import { CustomSelect } from './QrForm';
+import type { TimeRule } from '../types/qr';
+import { CustomSelect } from './ui/CustomSelect';
 
 interface TimeRuleBuilderProps {
   rules: TimeRule[];

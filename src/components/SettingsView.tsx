@@ -22,7 +22,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ clientID }) => {
     setStatusMsg(null);
     try {
       // Fetch GA4 credentials for client
-      const res = await callBackendAction('/actions/get-credentials', clientID, {});
+      const res = await callBackendAction<{ ga4_measurement_id?: string; ga4_key?: string }>('/actions/get-credentials', clientID, {});
       if (res && res.ga4_measurement_id) {
         setMeasurementId(res.ga4_measurement_id);
         setApiKey(res.ga4_key || '••••••••••••••••••••••••••••••••');

@@ -2,48 +2,24 @@ import { useState, useEffect } from 'react';
 import { Navbar } from './components/Navbar';
 import { StatsGrid } from './components/StatsGrid';
 import { QrCard } from './components/QrCard';
-import type { QrCodeData } from './components/QrCard';
+import type { QrCodeData } from './types/qr';
+import type { QrFormPayload } from './types/qr';
 import { QrForm } from './components/QrForm';
 import { AnalyticsView } from './components/AnalyticsView';
 import { SettingsView } from './components/SettingsView';
 import { AuthScreen } from './components/AuthScreen';
 import { LandingPage } from './components/LandingPage';
 import { QrPreviewModal } from './components/QrPreviewModal';
-import { callBackendAction, fetchFromBackend } from './utils/api';
-import { getSession, sessionToAuthUser, logout } from './utils/auth';
-import type { AuthUser } from './utils/auth';
-import { supabase } from './utils/supabaseClient';
+import { useAuth } from './hooks/useAuth';
+import { useQrCodes } from './hooks/useQrCodes';
+import { useDashboardStats } from './hooks/useDashboardStats';
 import { Plus, Search, Filter, RefreshCw } from 'lucide-react';
 
 function App() {
-  const [authUser, setAuthUser]   = useState<AuthUser | null>(null);
-  const [authLoading, setAuthLoading] = useState(true);
+  const { authUser, authLoading, setAuthUser, handleLogout: _handleLogout } = useAuth();
   const [authTab, setAuthTab]     = useState<'login' | 'signup'>('login');
   // 'landing' = first-time visitor, 'auth' = explicitly navigated to login/signup
   const [view, setView]           = useState<'landing' | 'auth'>('landing');
-
-  // ── Session bootstrap — check for an existing session on page load ──────
-  useEffect(() => {
-    getSession().then(session => {
-      if (session) setAuthUser(sessionToAuthUser(session));
-      setAuthLoading(false);
-    }).catch(err => {
-      console.error('Session bootstrap failed:', err);
-      setAuthLoading(false);
-    });
-
-    // Listen for auth state changes (login / logout / token refresh)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session) {
-        setAuthUser(sessionToAuthUser(session));
-      } else {
-        setAuthUser(null);
-        setQrs([]);
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
 
   // ── Dashboard tab state ────────────────────────────────────────────────────
   const [activeTab, setActiveTab]                       = useState<'qrs' | 'settings'>('qrs');
@@ -52,99 +28,30 @@ function App() {
   const [previewQr, setPreviewQr]                       = useState<QrCodeData | null>(null);
   const [showCreateForm, setShowCreateForm]             = useState(false);
 
-  // ── Data state ─────────────────────────────────────────────────────────────
-  const [qrs, setQrs]   = useState<QrCodeData[]>([]);
-  const [stats, setStats] = useState({
-    totalQrs: 0, activeQrs: 0, totalScans: 0, topQrName: '', topQrScans: 0,
-  });
+  // ── Data Hooks ─────────────────────────────────────────────────────────────
+  const activeClient = authUser?.id ?? '';
+  const { qrs, loading, fetchQrs, handleSaveQr: saveQr, handleToggleActive, handleDeleteQr } = useQrCodes(activeClient);
+  const stats = useDashboardStats(qrs);
 
   // ── Filter state ───────────────────────────────────────────────────────────
   const [searchQuery, setSearchQuery]   = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive' | 'expired'>('all');
-  const [loading, setLoading]           = useState(true);
 
   // ── Load QR data when user is authenticated ────────────────────────────────
   useEffect(() => {
     if (authUser) fetchQrs();
-  }, [authUser?.id]);
-
-  const activeClient = authUser?.id ?? '';
+  }, [authUser?.id, fetchQrs]);
 
   // ── Logout ────────────────────────────────────────────────────────────────
   const handleLogout = async () => {
-    await logout();
-    // onAuthStateChange listener above will clear authUser.
-    // Send the user to the auth screen (not the landing page) after logout.
-    setView('auth');
+    await _handleLogout(() => setView('auth'));
   };
 
-  // ── Backend integration ────────────────────────────────────────────────────
-  const fetchQrs = async () => {
-    if (!authUser) return;
-    try {
-      const qrList: QrCodeData[] = await fetchFromBackend('/qr-codes', authUser.id);
-      let scansMap: Record<string, number> = {};
-      try {
-        scansMap = await fetchFromBackend('/scans/count', authUser.id);
-      } catch (_) {}
-      const enriched = qrList.map(qr => ({ ...qr, scans_count: scansMap[qr.id] || 0 }));
-      setQrs(enriched);
-      calculateStats(enriched);
-    } catch (err) {
-      console.error('Failed to load QR codes:', err);
-      setQrs([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const calculateStats = (list: QrCodeData[]) => {
-    const totalQrs  = list.length;
-    const activeQrs = list.filter(qr => qr.is_active && (!qr.expires_at || new Date(qr.expires_at) > new Date())).length;
-    let totalScans = 0, topQrName = 'N/A', topQrScans = 0;
-    list.forEach(qr => {
-      const s = qr.scans_count || 0;
-      totalScans += s;
-      if (s > topQrScans) { topQrScans = s; topQrName = qr.name; }
-    });
-    setStats({ totalQrs, activeQrs, totalScans, topQrName, topQrScans });
-  };
-
-  const handleSaveQr = async (qrData: any) => {
-    try {
-      if (editingQr) {
-        await callBackendAction('/actions/update-qr', activeClient, qrData);
-      } else {
-        await callBackendAction('/actions/create-qr', activeClient, qrData);
-      }
-      setEditingQr(null);
-      setShowCreateForm(false);
-      await fetchQrs();
-    } catch (err: any) {
-      console.error('Failed to save QR code:', err);
-      throw err;
-    }
-  };
-
-  const handleToggleActive = async (qr: QrCodeData) => {
-    try {
-      await callBackendAction('/actions/update-qr', activeClient, { id: qr.id, is_active: !qr.is_active });
-      await fetchQrs();
-    } catch (err) {
-      console.error('Failed to toggle QR active status:', err);
-      alert('Failed to toggle QR status. Check if the backend is running on port 3001.');
-    }
-  };
-
-  const handleDeleteQr = async (qr: QrCodeData) => {
-    if (!window.confirm(`Delete "${qr.name}"? This cannot be undone.`)) return;
-    try {
-      await callBackendAction('/actions/delete-qr', activeClient, { id: qr.id });
-      await fetchQrs();
-    } catch (err) {
-      console.error('Failed to delete QR code:', err);
-      alert('Failed to delete QR code.');
-    }
+  // ── Handlers ──────────────────────────────────────────────────────────────
+  const handleSaveQr = async (qrData: QrFormPayload) => {
+    await saveQr(qrData, !!editingQr);
+    setEditingQr(null);
+    setShowCreateForm(false);
   };
 
   const filteredQrs = qrs.filter(qr => {

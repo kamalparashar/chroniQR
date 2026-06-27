@@ -31,11 +31,11 @@ async function backendFetch(
  *   /actions/update-qr  →  PUT    /api/qr/{id}
  *   /actions/delete-qr  →  DELETE /api/qr/{id}
  */
-export async function callBackendAction(
+export async function callBackendAction<T = unknown>(
   path: string,
   _clientID: string,      // kept for API compatibility; JWT carries the identity now
   input: Record<string, any> = {}
-): Promise<any> {
+): Promise<T | null> {
   // Translate legacy Hasura action paths to REST paths
   let method = 'POST';
   let restPath = path;
@@ -88,11 +88,11 @@ export async function callBackendAction(
  *   /scans/count   →  GET /api/scans/count
  *   /scans         →  GET /api/scans?qr_id=<id>
  */
-export async function fetchFromBackend(
+export async function fetchFromBackend<T = unknown>(
   path: string,
   _clientID: string,                      // kept for API compatibility
   params: Record<string, string> = {}
-): Promise<any> {
+): Promise<T> {
   // Translate legacy paths to REST paths
   let restPath = path;
   if (path === '/qr-codes') restPath = '/api/qr';
