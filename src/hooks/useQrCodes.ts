@@ -1,8 +1,10 @@
 import { useState, useCallback } from 'react';
 import { callBackendAction, fetchFromBackend } from '../utils/api';
 import type { QrCodeData, QrFormPayload } from '../types/qr';
+import { useToast } from '../contexts/ToastContext';
 
 export function useQrCodes(activeClient: string) {
+  const toast = useToast();
   const [qrs, setQrs] = useState<QrCodeData[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -19,7 +21,7 @@ export function useQrCodes(activeClient: string) {
       const enriched = qrList.map(qr => ({ ...qr, scans_count: scansMap[qr.id] || 0 }));
       setQrs(enriched);
     } catch (err) {
-      console.error('Failed to load QR codes:', err);
+      toast.error('Failed to load QR codes.');
       setQrs([]);
     } finally {
       setLoading(false);
@@ -34,8 +36,9 @@ export function useQrCodes(activeClient: string) {
         await callBackendAction('/actions/create-qr', activeClient, qrData);
       }
       await fetchQrs();
+      toast.success(isEditing ? 'QR code updated' : 'QR code created');
     } catch (err) {
-      console.error('Failed to save QR code:', err);
+      toast.error('Failed to save QR code');
       throw err;
     }
   };
@@ -44,9 +47,9 @@ export function useQrCodes(activeClient: string) {
     try {
       await callBackendAction('/actions/update-qr', activeClient, { id: qr.id, is_active: !qr.is_active });
       await fetchQrs();
+      toast.success(qr.is_active ? 'QR code deactivated' : 'QR code activated');
     } catch (err) {
-      console.error('Failed to toggle QR active status:', err);
-      alert('Failed to toggle QR status. Check if the backend is running on port 3001.');
+      toast.error('Failed to toggle QR status. Is the backend running?');
     }
   };
 
@@ -55,9 +58,9 @@ export function useQrCodes(activeClient: string) {
     try {
       await callBackendAction('/actions/delete-qr', activeClient, { id: qr.id });
       await fetchQrs();
+      toast.success('QR code deleted');
     } catch (err) {
-      console.error('Failed to delete QR code:', err);
-      alert('Failed to delete QR code.');
+      toast.error('Failed to delete QR code');
     }
   };
 

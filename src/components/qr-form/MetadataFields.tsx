@@ -21,7 +21,7 @@ export const MetadataFields: React.FC<MetadataFieldsProps> = (props) => {
   return (
     <>
       {/* UTM Config */}
-      <div style={props.sectionCardStyle}>
+      <div className="flex flex-col gap-4" style={props.sectionCardStyle}>
         <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-text-primary)' }}>UTM Attribution</p>
         <p className="text-muted" style={{ fontSize: 12, marginTop: -8 }}>Parameters appended to destination URLs automatically.</p>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
@@ -41,7 +41,7 @@ export const MetadataFields: React.FC<MetadataFieldsProps> = (props) => {
       </div>
 
       {/* Metadata */}
-      <div style={props.sectionCardStyle}>
+      <div className="flex flex-col gap-4" style={props.sectionCardStyle}>
         <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-text-primary)' }}>Metadata & Analytics</p>
         <div>
           <label style={S.label}>Tags (comma separated)</label>
@@ -51,7 +51,7 @@ export const MetadataFields: React.FC<MetadataFieldsProps> = (props) => {
           <label style={S.label}>Expiration Date / Time</label>
           <FocusInput type="datetime-local" value={props.expiresAt} onChange={e => props.setExpiresAt(e.target.value)} />
         </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--color-border)', paddingTop: 14 }}>
+        <div className="flex justify-between items-center" style={{ borderTop: '1px solid var(--color-border)', paddingTop: 14 }}>
           <div>
             <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--color-text-primary)' }}>GA4 Measurement Tracking</p>
             <p className="text-muted" style={{ fontSize: 11, marginTop: 2 }}>Fires real-time events to Google Analytics.</p>

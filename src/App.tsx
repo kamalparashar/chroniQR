@@ -69,7 +69,7 @@ function App() {
   // ── Auth loading / gate ───────────────────────────────────────────────────
   if (authLoading) {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'var(--color-app-bg)' }}>
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--color-app-bg)' }}>
         <RefreshCw size={28} className="spin text-muted" />
       </div>
     );
@@ -96,7 +96,7 @@ function App() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: 'var(--color-app-bg)' }}>
+    <div className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--color-app-bg)' }}>
       <Navbar authUser={authUser!} onLogout={handleLogout} />
 
       <main className="container dashboard-main" style={{ padding: 'var(--spacing-32) var(--spacing-24)', flex: 1 }}>
@@ -112,7 +112,7 @@ function App() {
         ) : (
           <>
             {/* Dashboard Header */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 'var(--spacing-32)', gap: 16, flexWrap: 'wrap' }}>
+            <div className="flex justify-between items-start mb-8 gap-4 flex-wrap">
               <div>
                 <h1 className="font-satoshi dashboard-heading" style={{ fontSize: 'var(--text-heading-lg)', fontWeight: 600 }}>
                   Overview Dashboard
@@ -122,7 +122,7 @@ function App() {
                 </p>
               </div>
 
-              <div style={{ display: 'flex', gap: 'var(--spacing-12)', flexWrap: 'wrap' }}>
+              <div className="flex gap-3 flex-wrap">
                 <button
                   type="button"
                   className={`btn ${activeTab === 'qrs' ? 'btn-primary' : 'btn-secondary'}`}
@@ -160,10 +160,8 @@ function App() {
                 />
 
                 {/* Filter Bar */}
-                <div className="card filter-bar" style={{
-                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                <div className="card filter-bar flex justify-between items-center flex-wrap mb-6" style={{
                   gap: 'var(--spacing-16)', padding: '12px 16px',
-                  marginBottom: 'var(--spacing-24)', flexWrap: 'wrap',
                   backgroundColor: 'var(--color-surface)',
                 }}>
                   <div style={{ position: 'relative', flex: 1, minWidth: 240 }}>
@@ -178,7 +176,7 @@ function App() {
                     />
                   </div>
 
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <div className="flex items-center gap-2">
                     <Filter size={14} className="text-muted" />
                     <span style={{ fontSize: 'var(--text-caption)', fontWeight: 500, color: 'var(--color-text-secondary)' }}>Status:</span>
                     <div style={{
@@ -209,7 +207,7 @@ function App() {
 
                 {/* QR Grid */}
                 {loading ? (
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 200, gap: 8 }}>
+                  <div className="flex flex-col items-center justify-center gap-2" style={{ minHeight: 200 }}>
                     <RefreshCw size={24} className="spin text-muted" />
                     <span className="text-muted text-caption">Loading QR codes…</span>
                   </div>
@@ -255,16 +253,16 @@ function App() {
       </main>
 
       {/* Footer */}
-      <footer style={{ borderTop: '1px solid var(--color-border)', backgroundColor: 'var(--color-surface)', padding: 'var(--spacing-32) 0', marginTop: 'auto' }}>
-        <div className="container" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 'var(--spacing-16)', fontSize: 'var(--text-caption)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+      <footer className="mt-auto" style={{ borderTop: '1px solid var(--color-border)', backgroundColor: 'var(--color-surface)', padding: 'var(--spacing-32) 0' }}>
+        <div className="container flex justify-between items-center flex-wrap gap-4 text-caption">
+          <div className="flex items-center gap-2">
             <span className="font-satoshi" style={{ fontWeight: 600 }}>
               chroni<span style={{ color: 'var(--color-accent)' }}>QR</span>
             </span>
             <span className="text-muted">|</span>
             <span className="text-muted">© 2026 chroniQR. All rights reserved.</span>
           </div>
-          <div style={{ display: 'flex', gap: 'var(--spacing-16)' }}>
+          <div className="flex gap-4">
             <span className="highlight-pill highlight-pill-violet" style={{ fontSize: 10 }}>Secure Encrypted</span>
             <span className="highlight-pill highlight-pill-lime" style={{ fontSize: 10 }}>Dynamic Redirection</span>
             <span className="highlight-pill highlight-pill-green" style={{ fontSize: 10 }}>Precision Analytics</span>

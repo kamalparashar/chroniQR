@@ -22,8 +22,8 @@ export const ConstraintEditor: React.FC<ConstraintEditorProps> = (props) => {
   if (props.destinationType === 'time_based') return null;
 
   return (
-    <div style={props.sectionCardStyle}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+    <div className="flex flex-col gap-4" style={props.sectionCardStyle}>
+      <div className="flex justify-between items-center">
         <div>
           <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-text-primary)' }}>Time Constraints</p>
           <p className="text-muted" style={{ fontSize: 12, marginTop: 2 }}>Restrict this QR to specific hours/days.</p>
@@ -35,14 +35,14 @@ export const ConstraintEditor: React.FC<ConstraintEditorProps> = (props) => {
       </div>
 
       {props.hasConstraints && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 14, borderTop: '1px solid var(--color-border)', paddingTop: 14 }}>
+        <div className="flex flex-col gap-3" style={{ borderTop: '1px solid var(--color-border)', paddingTop: 14 }}>
           <div>
             <label style={S.label}>Timezone</label>
             <TimezonePicker value={props.constraintTimezone} onChange={props.setConstraintTimezone} />
           </div>
           <div>
             <label style={S.label}>Active Days</label>
-            <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+            <div className="flex flex-wrap" style={{ gap: 4 }}>
               {['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map((day, idx) => {
                 const active = props.constraintDays.includes(idx);
                 return (

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { BarChart3, Globe, Smartphone, Monitor, ShieldCheck, MapPin, Loader, ChevronLeft } from 'lucide-react';
 import { fetchFromBackend } from '../utils/api';
 import type { QrCodeData } from './QrCard';
+import { useToast } from '../contexts/ToastContext';
 
 interface AnalyticsViewProps {
   qr: QrCodeData | null; // Null means workspace-wide analytics (optional extension)
@@ -31,6 +32,7 @@ interface ScanRecord {
 }
 
 export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ qr, onBack }) => {
+  const toast = useToast();
   const [scans, setScans] = useState<ScanRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -50,7 +52,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ qr, onBack }) => {
       const data: ScanRecord[] = await fetchFromBackend('/scans', qr.client_id, { qr_id: qr.id });
       setScans(data);
     } catch (err: any) {
-      console.error("Failed to load scans:", err);
+      toast.error("Failed to load scan statistics.");
       setErrorMsg("Failed to load scan statistics from backend.");
     } finally {
       setLoading(false);

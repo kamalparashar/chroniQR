@@ -61,7 +61,7 @@ export const DestinationFields: React.FC<DestinationFieldsProps> = (props) => {
       )}
 
       {destinationType === 'whatsapp' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <div className="flex flex-col gap-3">
           <div>
             <label style={S.label}>WhatsApp Number (E.164)</label>
             <FocusInput type="tel" value={props.waPhone} placeholder="+919876543210" onChange={e => props.setWaPhone(e.target.value)} required />
@@ -74,7 +74,7 @@ export const DestinationFields: React.FC<DestinationFieldsProps> = (props) => {
       )}
 
       {destinationType === 'call' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <div className="flex flex-col gap-3">
           <div>
             <label style={S.label}>AI Agent Number (E.164)</label>
             <FocusInput type="tel" value={props.callNumber} placeholder="+14155552671" onChange={e => props.setCallNumber(e.target.value)} required />
@@ -87,7 +87,7 @@ export const DestinationFields: React.FC<DestinationFieldsProps> = (props) => {
       )}
 
       {destinationType === 'email' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <div className="flex flex-col gap-3">
           <div>
             <label style={S.label}>To Email Address</label>
             <FocusInput type="email" value={props.emailTo} placeholder="info@company.com" onChange={e => props.setEmailTo(e.target.value)} required />
@@ -133,7 +133,7 @@ export const DestinationFields: React.FC<DestinationFieldsProps> = (props) => {
       )}
 
       {destinationType === 'time_based' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+        <div className="flex flex-col gap-5">
           {/* Timezone */}
           <div>
             <label style={S.label}>Evaluation Timezone</label>
@@ -161,7 +161,7 @@ export const DestinationFields: React.FC<DestinationFieldsProps> = (props) => {
               </div>
             )}
             {props.defaultType === 'whatsapp' && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <div className="flex flex-col gap-2">
                 <div>
                   <label style={S.label}>Phone (E.164)</label>
                   <FocusInput type="tel" value={props.defaultWaPhone} placeholder="+919876543210" onChange={e => props.setDefaultWaPhone(e.target.value)} required />
@@ -173,7 +173,7 @@ export const DestinationFields: React.FC<DestinationFieldsProps> = (props) => {
               </div>
             )}
             {props.defaultType === 'call' && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <div className="flex flex-col gap-2">
                 <div>
                   <label style={S.label}>Caller Number (E.164)</label>
                   <FocusInput type="tel" value={props.defaultCallNumber} placeholder="+14155552671" onChange={e => props.setDefaultCallNumber(e.target.value)} required />

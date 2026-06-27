@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import QRCode from 'qrcode';
 import { X, Download, ExternalLink, Link2, Copy, Check } from 'lucide-react';
 import type { QrCodeData } from './QrCard';
+import { useToast } from '../contexts/ToastContext';
 
 interface QrPreviewModalProps {
   qr: QrCodeData;
@@ -9,6 +10,7 @@ interface QrPreviewModalProps {
 }
 
 export const QrPreviewModal: React.FC<QrPreviewModalProps> = ({ qr, onClose }) => {
+  const toast = useToast();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [copied, setCopied] = React.useState(false);
 
@@ -21,8 +23,8 @@ export const QrPreviewModal: React.FC<QrPreviewModalProps> = ({ qr, onClose }) =
         dark: '#000000',
         light: '#ffffff',
       },
-    }, (err) => {
-      if (err) console.error('Error generating QR code in modal:', err);
+    }, (err: any) => {
+      if (err) toast.error('Error generating QR preview');
     });
   }, [qr.short_url]);
 
@@ -39,9 +41,10 @@ export const QrPreviewModal: React.FC<QrPreviewModalProps> = ({ qr, onClose }) =
     try {
       await navigator.clipboard.writeText(qr.short_url);
       setCopied(true);
+      toast.success('Link copied to clipboard');
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
-      console.error('Failed to copy link:', err);
+      toast.error('Failed to copy link');
     }
   };
 

@@ -236,7 +236,6 @@ export const QrForm: React.FC<QrFormProps> = ({ qr, clientID: _clientID, onSave,
 
   // ── Card style ─────────────────────────────────────────────────────────────
   const cardStyle = (color: string, selected: boolean): React.CSSProperties => ({
-    display: 'flex', flexDirection: 'column', gap: 8,
     padding: '14px 16px',
     backgroundColor: selected ? `${color}10` : 'var(--color-surface)',
     border: `1px solid ${selected ? color : 'var(--color-border)'}`,
@@ -251,16 +250,13 @@ export const QrForm: React.FC<QrFormProps> = ({ qr, clientID: _clientID, onSave,
     border: '1px solid var(--color-border)',
     borderRadius: 12,
     padding: 20,
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 16,
   };
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: 32, alignItems: 'flex-start' }}>
       {/* ── Left: Form ───────────────────────────────────────────────────── */}
-      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+      <form onSubmit={handleSubmit} className="flex flex-col gap-5">
         {/* Header */}
         <div>
           <h2 style={{ fontFamily: 'var(--font-satoshi)', fontSize: 24, fontWeight: 600 }}>
@@ -274,7 +270,7 @@ export const QrForm: React.FC<QrFormProps> = ({ qr, clientID: _clientID, onSave,
         {/* Errors */}
         {validationErrors.length > 0 && (
           <div style={{ border: '1px solid rgba(239,68,68,0.3)', backgroundColor: 'var(--color-error-dim)', padding: '12px 16px', borderRadius: 6 }}>
-            <p style={{ color: 'var(--color-error)', fontSize: 13, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
+            <p className="flex items-center gap-2" style={{ color: 'var(--color-error)', fontSize: 13, fontWeight: 600 }}>
               <AlertTriangle size={14} /> Validation Errors
             </p>
             <ul style={{ paddingLeft: 16, marginTop: 4, fontSize: 12, color: 'var(--color-error)' }}>
@@ -284,7 +280,7 @@ export const QrForm: React.FC<QrFormProps> = ({ qr, clientID: _clientID, onSave,
         )}
 
         {/* Basic Info */}
-        <div style={sectionCard}>
+        <div className="flex flex-col gap-4" style={sectionCard}>
           <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-text-primary)' }}>Basic Information</p>
           <div>
             <label style={S.label}>QR Code Name</label>
@@ -299,7 +295,7 @@ export const QrForm: React.FC<QrFormProps> = ({ qr, clientID: _clientID, onSave,
         </div>
 
         {/* Destination Type — Visual Card Picker */}
-        <div style={sectionCard}>
+        <div className="flex flex-col gap-4" style={sectionCard}>
           <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-text-primary)' }}>Destination Channel</p>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
             {DEST_TYPES.map(({ value, label, desc, icon: Icon, color }) => {
@@ -308,21 +304,21 @@ export const QrForm: React.FC<QrFormProps> = ({ qr, clientID: _clientID, onSave,
                 <button
                   key={value}
                   type="button"
+                  className="flex flex-col gap-2"
                   onClick={() => setDestinationType(value)}
                   style={cardStyle(color, selected)}
                 >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <div style={{
+                  <div className="flex justify-between items-start w-full">
+                    <div className="flex items-center justify-center" style={{
                       width: 32, height: 32, borderRadius: 6,
                       backgroundColor: `${color}18`,
                       border: `1px solid ${color}30`,
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
                       color,
                     }}>
                       <Icon size={16} />
                     </div>
                     {selected && (
-                      <div style={{ width: 18, height: 18, borderRadius: '50%', backgroundColor: color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <div className="flex items-center justify-center" style={{ width: 18, height: 18, borderRadius: '50%', backgroundColor: color }}>
                         <Check size={11} color="#000" strokeWidth={3} />
                       </div>
                     )}
@@ -338,7 +334,7 @@ export const QrForm: React.FC<QrFormProps> = ({ qr, clientID: _clientID, onSave,
         </div>
 
         {/* Destination Config */}
-        <div style={sectionCard}>
+        <div className="flex flex-col gap-4" style={sectionCard}>
           <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-text-primary)' }}>Destination Config</p>
           <DestinationFields 
             destinationType={destinationType}
@@ -391,7 +387,7 @@ export const QrForm: React.FC<QrFormProps> = ({ qr, clientID: _clientID, onSave,
         />
 
         {/* Actions */}
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, marginTop: 8 }}>
+        <div className="flex justify-end gap-3 mt-4">
           <button type="button" className="btn btn-secondary" disabled={loading} onClick={onCancel}>Cancel</button>
           <button type="submit" className="btn btn-accent" disabled={loading} style={{ minWidth: 140 }}>
             {loading ? <><RefreshCw size={14} className="spin" /> Saving…</> : (qr ? 'Update QR Code' : 'Create QR Code')}
@@ -401,7 +397,7 @@ export const QrForm: React.FC<QrFormProps> = ({ qr, clientID: _clientID, onSave,
 
       {/* ── Right: Preview Card ───────────────────────────────────────────── */}
       <div style={{ position: 'sticky', top: 88 }}>
-        <div style={{ ...sectionCard, alignItems: 'center', textAlign: 'center', gap: 20 }}>
+        <div className="flex flex-col items-center text-center gap-5" style={sectionCard}>
           <p style={{ fontSize: 11, fontWeight: 600, color: 'var(--color-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
             QR Preview
           </p>
@@ -424,23 +420,20 @@ export const QrForm: React.FC<QrFormProps> = ({ qr, clientID: _clientID, onSave,
             </p>
           </div>
 
-          <div style={{ width: '100%', borderTop: '1px solid var(--color-border)', paddingTop: 16, display: 'flex', flexDirection: 'column', gap: 8, textAlign: 'left' }}>
+          <div className="flex flex-col gap-2 w-full text-left mt-4" style={{ borderTop: '1px solid var(--color-border)', paddingTop: 16 }}>
             <p style={{ fontSize: 11, fontWeight: 600, color: 'var(--color-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Config</p>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12 }}>
+            <div className="flex items-center gap-2" style={{ fontSize: 12 }}>
               <span className="text-muted">Channel:</span>
               <span className="tag-chip" style={{ fontFamily: 'var(--font-geistmono)', fontSize: 10 }}>{destinationType}</span>
             </div>
             {destinationType === 'time_based' && (
               <>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12 }}>
+                <div className="flex items-center gap-2" style={{ fontSize: 12 }}>
                   <span className="text-muted">TZ:</span>
                   <span className="tag-chip tag-chip-lime" style={{ fontFamily: 'var(--font-geistmono)', fontSize: 10 }}>{timezone}</span>
                 </div>
                 {livePreviewText && (
-                  <div style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: 4,
+                  <div className="flex flex-col gap-2 text-left" style={{
                     marginTop: 6,
                     padding: '8px 10px',
                     backgroundColor: 'var(--color-accent-dim)',
@@ -456,13 +449,13 @@ export const QrForm: React.FC<QrFormProps> = ({ qr, clientID: _clientID, onSave,
               </>
             )}
             {utmSource && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12 }}>
+              <div className="flex items-center gap-2" style={{ fontSize: 12 }}>
                 <span className="text-muted">UTM source:</span>
                 <span className="tag-chip tag-chip-orange" style={{ fontSize: 10 }}>{utmSource}</span>
               </div>
             )}
             {expiresAt && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12 }}>
+              <div className="flex items-center gap-2" style={{ fontSize: 12 }}>
                 <span className="text-muted">Expires:</span>
                 <span style={{ color: 'var(--color-text-primary)' }}>{new Date(expiresAt).toLocaleDateString()}</span>
               </div>

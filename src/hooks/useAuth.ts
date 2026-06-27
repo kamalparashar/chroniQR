@@ -2,8 +2,10 @@ import { useState, useEffect } from 'react';
 import { getSession, sessionToAuthUser, logout } from '../utils/auth';
 import type { AuthUser } from '../utils/auth';
 import { supabase } from '../utils/supabaseClient';
+import { useToast } from '../contexts/ToastContext';
 
 export function useAuth() {
+  const toast = useToast();
   const [authUser, setAuthUser] = useState<AuthUser | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
 
@@ -11,8 +13,8 @@ export function useAuth() {
     getSession().then(session => {
       if (session) setAuthUser(sessionToAuthUser(session));
       setAuthLoading(false);
-    }).catch(err => {
-      console.error('Session bootstrap failed:', err);
+    }).catch(() => {
+      toast.error('Session bootstrap failed');
       setAuthLoading(false);
     });
 
@@ -29,8 +31,13 @@ export function useAuth() {
   }, []);
 
   const handleLogout = async (onLogout?: () => void) => {
-    await logout();
-    if (onLogout) onLogout();
+    try {
+      await logout();
+      if (onLogout) onLogout();
+      toast.success('Logged out successfully');
+    } catch (err) {
+      toast.error('Logout failed');
+    }
   };
 
   return { authUser, authLoading, setAuthUser, handleLogout };
