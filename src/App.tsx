@@ -192,7 +192,7 @@ function App() {
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: 'var(--color-app-bg)' }}>
       <Navbar authUser={authUser!} onLogout={handleLogout} />
 
-      <main className="container" style={{ padding: 'var(--spacing-32) var(--spacing-24)', flex: 1 }}>
+      <main className="container dashboard-main" style={{ padding: 'var(--spacing-32) var(--spacing-24)', flex: 1 }}>
         {selectedQrForAnalytics ? (
           <AnalyticsView qr={selectedQrForAnalytics} onBack={() => { setSelectedQrForAnalytics(null); fetchQrs(); }} />
         ) : showCreateForm || editingQr ? (
@@ -207,7 +207,7 @@ function App() {
             {/* Dashboard Header */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 'var(--spacing-32)', gap: 16, flexWrap: 'wrap' }}>
               <div>
-                <h1 className="font-satoshi" style={{ fontSize: 'var(--text-heading-lg)', fontWeight: 600 }}>
+                <h1 className="font-satoshi dashboard-heading" style={{ fontSize: 'var(--text-heading-lg)', fontWeight: 600 }}>
                   Overview Dashboard
                 </h1>
                 <p className="text-muted text-sm" style={{ marginTop: 4 }}>
@@ -253,7 +253,7 @@ function App() {
                 />
 
                 {/* Filter Bar */}
-                <div className="card" style={{
+                <div className="card filter-bar" style={{
                   display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                   gap: 'var(--spacing-16)', padding: '12px 16px',
                   marginBottom: 'var(--spacing-24)', flexWrap: 'wrap',

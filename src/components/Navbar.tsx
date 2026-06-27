@@ -68,7 +68,7 @@ export const Navbar: React.FC<NavbarProps> = ({ authUser, onLogout }) => {
             </div>
 
             {/* Name + email */}
-            <div style={{ lineHeight: 1.2 }}>
+            <div className="dashboard-navbar-user-name" style={{ lineHeight: 1.2 }}>
               <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-text-primary)' }}>
                 {authUser.name}
               </div>

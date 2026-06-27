@@ -6,6 +6,27 @@ interface LandingPageProps {
   onLogin: () => void;
 }
 
+// ── Intersection Observer Hook ───────────────────────────────────────────────
+function useInView(options: IntersectionObserverInit = { threshold: 0.1 }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [inView, setInView] = useState(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) {
+        setInView(true);
+        observer.unobserve(el);
+      }
+    }, options);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [options]);
+
+  return { ref, inView };
+}
+
 // ── Decorative QR Matrix (CSS-only) ─────────────────────────────────────────
 const QR_PATTERN = [
   [1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 0, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1],
@@ -31,7 +52,157 @@ const QR_PATTERN = [
   [1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 0, 1, 1, 1, 0, 1, 0, 1, 1, 1],
 ];
 
-// Accent cells that pulse lime
+// ── Wave Dot Grid (canvas) ───────────────────────────────────────────────────
+function ClothDotGrid() {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    // ── Constants ─────────────────────────────────────────────────────────
+    const SPACING = 32;   // dot grid spacing (px)
+    const MOUSE_R = 120;  // cursor influence radius
+    const PUSH = 5;    // max push strength
+    const SPRING = 0.08; // spring constant (pulls back to rest)
+    const DAMPING = 0.82; // velocity damping (higher = snappier return)
+
+    type Pt = { x: number; y: number; vx: number; vy: number; ox: number; oy: number };
+
+    let pts: Pt[] = [];
+    let cols = 0, rows = 0;
+    const mouse = { x: -9999, y: -9999 };
+    let active = false; // only loop while mouse is inside
+
+    // ── Build grid ─────────────────────────────────────────────────────────
+    const init = () => {
+      cols = Math.ceil(canvas.width / SPACING) + 1;
+      rows = Math.ceil(canvas.height / SPACING) + 1;
+      pts = [];
+      for (let r = 0; r < rows; r++)
+        for (let c = 0; c < cols; c++) {
+          const x = c * SPACING, y = r * SPACING;
+          pts.push({ x, y, vx: 0, vy: 0, ox: x, oy: y });
+        }
+    };
+
+    // ── Draw static grid (white dots) ─────────────────────────────────────
+    const drawStatic = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      for (const p of pts) {
+        ctx.beginPath();
+        ctx.arc(p.ox, p.oy, 1, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(237, 237, 237, 0.25)';
+        ctx.fill();
+      }
+    };
+
+    // ── Animated loop (only while cursor is active) ────────────────────────
+    let animId = 0;
+
+    const loop = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      let anyMoved = false;
+
+      for (const p of pts) {
+        // Spring back to rest
+        const sx = (p.ox - p.x) * SPRING;
+        const sy = (p.oy - p.y) * SPRING;
+        p.vx = (p.vx + sx) * DAMPING;
+        p.vy = (p.vy + sy) * DAMPING;
+
+        // Cursor repulsion
+        const dx = p.x - mouse.x;
+        const dy = p.y - mouse.y;
+        const d = Math.sqrt(dx * dx + dy * dy);
+        if (d < MOUSE_R && d > 0) {
+          const f = ((MOUSE_R - d) / MOUSE_R) ** 2 * PUSH;
+          p.vx += (dx / d) * f;
+          p.vy += (dy / d) * f;
+        }
+
+        p.x += p.vx;
+        p.y += p.vy;
+
+        // Track if any dot is still moving (above threshold)
+        const distFromRest = Math.abs(p.x - p.ox) + Math.abs(p.y - p.oy);
+        if (distFromRest > 0.15) anyMoved = true;
+
+        // Draw — white at rest, blooms lime when displaced
+        const disp = Math.sqrt((p.x - p.ox) ** 2 + (p.y - p.oy) ** 2);
+        const norm = Math.min(disp / 20, 1);
+        // Interpolate: white (237,237,237) → lime (204,255,0)
+        const r_ch = Math.round(237 - norm * (237 - 28));
+        const g_ch = Math.round(237 + norm * (255 - 237));
+        const b_ch = Math.round(237 - norm * 237);
+        const opacity = 0.25 + norm * 0.65;
+        const radius = 1 + norm * 1.0;
+
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, radius, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(${r_ch}, ${g_ch}, ${b_ch}, ${opacity})`;
+        ctx.fill();
+      }
+
+      // Keep looping only if dots are still settling; otherwise freeze
+      if (active || anyMoved) {
+        animId = requestAnimationFrame(loop);
+      } else {
+        drawStatic();
+      }
+    };
+
+    // ── Events ─────────────────────────────────────────────────────────────
+    const onMouseMove = (e: MouseEvent) => {
+      const rect = canvas.getBoundingClientRect();
+      mouse.x = e.clientX - rect.left;
+      mouse.y = e.clientY - rect.top;
+      if (!active) { active = true; cancelAnimationFrame(animId); loop(); }
+    };
+
+    const onMouseLeave = () => {
+      mouse.x = -9999; mouse.y = -9999;
+      active = false; // loop will self-terminate once all dots settle
+    };
+
+    const resize = () => {
+      canvas.width = canvas.offsetWidth;
+      canvas.height = canvas.offsetHeight;
+      init();
+      drawStatic();
+    };
+
+    resize();
+    window.addEventListener('resize', resize);
+    window.addEventListener('mousemove', onMouseMove);
+    canvas.closest('section')?.addEventListener('mouseleave', onMouseLeave);
+
+    return () => {
+      cancelAnimationFrame(animId);
+      window.removeEventListener('resize', resize);
+      window.removeEventListener('mousemove', onMouseMove);
+      canvas.closest('section')?.removeEventListener('mouseleave', onMouseLeave);
+    };
+  }, []);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      style={{
+        position: 'absolute',
+        inset: 0,
+        width: '100%',
+        height: '100%',
+        pointerEvents: 'none',
+        zIndex: 0,
+      }}
+    />
+  );
+}
+
 const ACCENT_CELLS = new Set(['2-10', '3-10', '4-10', '9-3', '10-3', '11-9', '12-4']);
 
 function QrMatrix() {
@@ -86,21 +257,28 @@ interface FeatureCardProps {
 }
 function FeatureCard({ icon, title, desc, accentColor = 'var(--color-accent)' }: FeatureCardProps) {
   const [hovered, setHovered] = useState(false);
+  const { ref, inView } = useInView({ threshold: 0.1 });
+
   return (
     <div
+      ref={ref}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       className="feature-card-glow"
       style={{
         backgroundColor: 'rgba(10, 10, 10, 0.7)',
         backdropFilter: 'blur(8px)',
-        border: `1px solid ${hovered ? 'transparent' : 'var(--color-border)'}`,
+        border: `1.5px solid ${hovered ? 'rgba(255, 255, 255, 0.2)' : 'var(--color-border)'}`,
         borderRadius: '12px',
         padding: '24px',
         display: 'flex',
         flexDirection: 'column',
         gap: '12px',
         cursor: 'default',
+        transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
+        transform: inView ? (hovered ? 'translateY(-4px)' : 'translateY(0)') : 'translateY(24px)',
+        opacity: inView ? 1 : 0,
+        boxShadow: hovered ? '0 12px 32px rgba(0,0,0,0.5)' : 'none',
       }}
     >
       <div
@@ -132,6 +310,7 @@ function StatPill({ value, label }: { value: string; label: string }) {
   const [hovered, setHovered] = useState(false);
   return (
     <div
+      className="stat-pill"
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
@@ -165,8 +344,21 @@ function StatPill({ value, label }: { value: string; label: string }) {
 
 // ── Step ──────────────────────────────────────────────────────────────────────
 function Step({ n, title, desc }: { n: number; title: string; desc: string }) {
+  const { ref, inView } = useInView({ threshold: 0.2 });
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: 12, flex: 1 }}>
+    <div ref={ref} style={{
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      textAlign: 'center',
+      gap: 12,
+      flex: 1,
+      transition: 'all 0.5s cubic-bezier(0.16, 1, 0.3, 1)',
+      transitionDelay: `${n * 100}ms`,
+      transform: inView ? 'translateY(0)' : 'translateY(24px)',
+      opacity: inView ? 1 : 0,
+    }}>
       <div className="step-number-container">
         <div
           className="step-number-pulse"
@@ -237,15 +429,23 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onLogin 
             <span className="font-satoshi" style={{ fontSize: 20, fontWeight: 600 }}>
               chroni<span style={{ color: 'var(--color-accent)' }}>QR</span>
             </span>
-            <span className="tag-chip tag-chip-lime" style={{ marginLeft: 4, fontSize: 10 }}>Beta</span>
           </div>
 
           {/* Nav Actions */}
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            <button id="landing-login-btn" className="btn btn-secondary" style={{ fontSize: 14 }} onClick={onLogin}>
-              Log in
+          <div className="nav-actions" style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <button
+              id="landing-login-btn"
+              className="btn btn-secondary btn-login-lime"
+              style={{
+                fontSize: 14,
+                borderColor: 'var(--color-accent)',
+                color: 'var(--color-accent)',
+              }}
+              onClick={onLogin}
+            >
+              <span>Log in</span>
             </button>
-            <button id="landing-signup-btn" className="btn btn-accent btn-accent-glow" style={{ fontSize: 14 }} onClick={onGetStarted}>
+            <button id="landing-signup-btn" className="btn btn-accent btn-accent-glow nav-hide-mobile" style={{ fontSize: 14 }} onClick={onGetStarted}>
               Get started free
             </button>
           </div>
@@ -253,20 +453,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onLogin 
       </header>
 
       {/* ── Hero Section ──────────────────────────────────────────────────── */}
-      <section className="dot-grid-bg" style={{ padding: '80px 0 96px', position: 'relative', overflow: 'hidden' }}>
-        {/* Ambient float orbs */}
-        <div className="glow-orb-container">
-          <div className="glow-orb glow-orb-1" />
-          <div className="glow-orb glow-orb-2" />
-          <div className="glow-orb glow-orb-3" />
-        </div>
-
-        {/* Radial fade overlay */}
-        <div style={{
-          position: 'absolute', inset: 0,
-          background: 'radial-gradient(ellipse 80% 60% at 50% 0%, rgba(204,255,0,0.04) 0%, transparent 70%)',
-          pointerEvents: 'none',
-        }} />
+      <section className="hero-section" style={{ padding: '80px 0 96px', position: 'relative', backgroundColor: 'var(--color-app-bg)' }}>
+        {/* Cloth physics dot grid */}
+        <ClothDotGrid />
 
         <div className="container" style={{
           display: 'flex',
@@ -293,22 +482,29 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onLogin 
           </div>
 
           {/* Headline */}
-          <h1 style={{
-            fontSize: 'clamp(40px, 6vw, 72px)',
-            fontWeight: 700,
+          <h1 className="hero-headline" style={{
+            fontSize: 'clamp(28px, 5vw, 72px)',
+            fontWeight: 800,
             letterSpacing: '-0.04em',
-            lineHeight: 1.05,
-            maxWidth: 800,
+            lineHeight: 1.1,
+            maxWidth: 900,
+            width: '100%',
             color: 'var(--color-text-primary)',
+            overflowWrap: 'break-word',
+            position: 'relative',
+            zIndex: 1,
+            overflow: 'visible',
           }}>
             QR Codes that know{' '}
             <span className="gradient-text-animated" style={{
               fontStyle: 'italic',
+              display: 'inline-block',
+              paddingRight: '0.15em',
             }}>what time it is.</span>
           </h1>
 
           {/* Subheading */}
-          <p style={{
+          <p className="hero-subheading" style={{
             fontSize: 18,
             color: 'var(--color-text-secondary)',
             maxWidth: 560,
@@ -318,7 +514,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onLogin 
           </p>
 
           {/* CTAs */}
-          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
+          <div className="hero-ctas" style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
             <button
               id="hero-get-started-btn"
               className="btn btn-accent btn-accent-glow"
@@ -338,7 +534,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onLogin 
           </div>
 
           {/* QR Matrix Hero */}
-          <div style={{ marginTop: 16 }}>
+          <div className="qr-matrix-wrap" style={{ marginTop: 16 }}>
             <QrMatrix />
           </div>
         </div>
@@ -346,7 +542,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onLogin 
 
       {/* ── Stats Bar ─────────────────────────────────────────────────────── */}
       <section style={{ borderTop: '1px solid var(--color-border)', borderBottom: '1px solid var(--color-border)', padding: '32px 0' }}>
-        <div className="container" style={{ display: 'flex', gap: 16, flexWrap: 'wrap', justifyContent: 'center' }}>
+        <div className="container stats-bar-inner" style={{ display: 'flex', gap: 16, flexWrap: 'wrap', justifyContent: 'center' }}>
           <StatPill value="<10ms" label="Avg redirect latency" />
           <StatPill value="400+" label="IANA timezones" />
           <StatPill value="6" label="Destination channels" />
@@ -355,7 +551,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onLogin 
       </section>
 
       {/* ── Features Grid ─────────────────────────────────────────────────── */}
-      <section ref={featuresRef} style={{ padding: '96px 0' }}>
+      <section ref={featuresRef} className="section-features" style={{ padding: '96px 0' }}>
         <div className="container">
           <div style={{ textAlign: 'center', marginBottom: 56 }}>
             <p style={{ fontSize: 12, fontFamily: 'var(--font-geistmono)', color: 'var(--color-accent)', fontWeight: 600, letterSpacing: '0.1em', marginBottom: 12, textTransform: 'uppercase' }}>
@@ -408,7 +604,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onLogin 
       </section>
 
       {/* ── How It Works ──────────────────────────────────────────────────── */}
-      <section style={{ padding: '80px 0', borderTop: '1px solid var(--color-border)' }}>
+      <section className="section-how-it-works" style={{ padding: '80px 0', borderTop: '1px solid var(--color-border)' }}>
         <div className="container">
           <div style={{ textAlign: 'center', marginBottom: 56 }}>
             <p style={{ fontSize: 12, fontFamily: 'var(--font-geistmono)', color: 'var(--color-accent)', fontWeight: 600, letterSpacing: '0.1em', marginBottom: 12, textTransform: 'uppercase' }}>
@@ -419,9 +615,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onLogin 
             </h2>
           </div>
 
-          <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', justifyContent: 'center', position: 'relative' }}>
-            {/* Connector line (decorative) */}
-            <div style={{
+          <div className="how-steps" style={{ display: 'flex', gap: 24, flexWrap: 'wrap', justifyContent: 'center', position: 'relative' }}>
+            {/* Connector line (decorative, hidden on mobile via .how-steps-connector) */}
+            <div className="how-steps-connector" style={{
               position: 'absolute',
               top: 24,
               left: '20%',
@@ -438,9 +634,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onLogin 
       </section>
 
       {/* ── Final CTA Banner ──────────────────────────────────────────────── */}
-      <section style={{ padding: '80px 0 96px', borderTop: '1px solid var(--color-border)' }}>
+      <section className="section-cta" style={{ padding: '80px 0 96px', borderTop: '1px solid var(--color-border)' }}>
         <div className="container">
-          <div style={{
+          <div className="cta-banner-inner" style={{
             backgroundColor: 'var(--color-surface)',
             border: '1px solid var(--color-border)',
             borderRadius: 16,
@@ -502,7 +698,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onLogin 
         padding: '32px 0',
         backgroundColor: 'var(--color-surface)',
       }}>
-        <div className="container" style={{
+        <div className="container landing-footer-inner" style={{
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',

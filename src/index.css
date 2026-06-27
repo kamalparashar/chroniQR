@@ -144,6 +144,7 @@
 
 html {
   scroll-behavior: smooth;
+  overflow-x: hidden;
 }
 
 body {
@@ -152,6 +153,8 @@ body {
   color: var(--color-text-primary);
   line-height: var(--leading-body);
   font-size: var(--text-body);
+  overflow-x: hidden;
+  width: 100%;
 }
 
 a {
@@ -791,6 +794,50 @@ input:checked + .slider::before {
   left: 150%;
 }
 
+/* ── Login Button (lime ghost with fill sweep) ─────────────────────────────── */
+.btn-login-lime {
+  position: relative;
+  overflow: hidden;
+  transition:
+    color 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+    background-color 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.15s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+/* Fill sweep pseudo-element */
+.btn-login-lime::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-color: var(--color-accent);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 0;
+  border-radius: inherit;
+}
+.btn-login-lime:hover::before {
+  transform: scaleX(1);
+}
+/* Text sits above the fill */
+.btn-login-lime > * {
+  position: relative;
+  z-index: 1;
+}
+.btn-login-lime:hover {
+  color: #000 !important;
+  border-color: var(--color-accent) !important;
+  box-shadow: 0 0 18px rgba(204, 255, 0, 0.25) !important;
+  transform: translateY(-1px);
+}
+/* Press / click effect */
+.btn-login-lime:active {
+  transform: scale(0.96) translateY(0px) !important;
+  box-shadow: 0 0 8px rgba(204, 255, 0, 0.15) !important;
+}
+
+
 /* ── TimeRuleBuilder Day Buttons ───────────────────────────────────────────── */
 .day-btn {
   display: inline-flex;
@@ -824,3 +871,188 @@ input:checked + .slider::before {
 }
 
 
+/* ════════════════════════════════════════════════════════════════════════════
+   RESPONSIVE BREAKPOINTS
+   ════════════════════════════════════════════════════════════════════════════ */
+
+/* ── Tablet / Small desktop  ≤ 900px ─────────────────────────────────────── */
+@media (max-width: 900px) {
+  /* Stats grid: 2-col */
+  .grid-cols-4 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* ── Mobile  ≤ 768px ─────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+
+  /* ── Container padding tighter on mobile */
+  .container {
+    padding: 0 var(--spacing-16);
+  }
+
+  /* ── Landing: Nav header — hide "Get started free" button on mobile */
+  .nav-hide-mobile {
+    display: none !important;
+  }
+
+  /* ── Landing: Nav header — hide "Get started free" label text, keep icon */
+  .nav-signup-text {
+    display: none;
+  }
+
+  /* ── Landing: Hero CTAs → stacked column, centered */
+  .hero-ctas {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    width: 100% !important;
+    max-width: 300px !important;
+    margin: 0 auto !important;
+  }
+  .hero-ctas .btn {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+
+  /* ── Landing: How It Works steps → column, centered */
+  .how-steps {
+    flex-direction: column !important;
+    align-items: center !important;
+  }
+  /* Hide the decorative connector line on mobile */
+  .how-steps-connector {
+    display: none !important;
+  }
+
+  /* ── Landing: CTA Banner padding shrink */
+  .cta-banner-inner {
+    padding: 36px 24px !important;
+    border-radius: 12px !important;
+  }
+
+  /* ── Landing: Footer → column, centered */
+  .landing-footer-inner {
+    flex-direction: column !important;
+    align-items: center !important;
+    text-align: center !important;
+    gap: 12px !important;
+  }
+
+  /* ── Landing: Stats pills bar → centered, wrap nicely */
+  .stats-bar-inner {
+    justify-content: center !important;
+  }
+
+  /* ── Landing: Hero subheading font size */
+  .hero-subheading {
+    font-size: 16px !important;
+  }
+
+  /* ── Dashboard: heading size shrink */
+  .dashboard-heading {
+    font-size: 28px !important;
+  }
+
+  /* ── Dashboard main padding */
+  .dashboard-main {
+    padding: var(--spacing-24) var(--spacing-16) !important;
+  }
+
+  /* ── QR Grid → single column on mobile */
+  .layout-grid.grid-cols-2 {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* ── Filter bar → column */
+  .filter-bar {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+  .filter-bar > div:first-child {
+    min-width: 0 !important;
+  }
+
+  /* ── Stats grid → stay 2-col */
+  .grid-cols-4 {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  /* ── Dashboard navbar: hide name/email text to save space */
+  .dashboard-navbar-user-name {
+    display: none !important;
+  }
+
+  /* ── QR Matrix: scale down on mobile so it doesn't overflow */
+  .qr-matrix-wrap {
+    transform: scale(0.68);
+    transform-origin: top center;
+    margin-top: 0 !important;
+    margin-bottom: -60px !important;
+  }
+
+  /* ── Hero section: reduce padding on mobile */
+  .hero-section {
+    padding: 48px 0 56px !important;
+  }
+
+  /* ── Sections: reduce vertical padding on mobile */
+  .section-features {
+    padding: 64px 0 !important;
+  }
+  .section-how-it-works {
+    padding: 56px 0 !important;
+  }
+  .section-cta {
+    padding: 56px 0 72px !important;
+  }
+}
+
+/* ── Small mobile  ≤ 480px ───────────────────────────────────────────────── */
+@media (max-width: 480px) {
+  /* Stats → single col */
+  .grid-cols-4 {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* CTA banner */
+  .cta-banner-inner {
+    padding: 28px 16px !important;
+  }
+
+  /* Dashboard heading minimum floor */
+  .dashboard-heading {
+    font-size: 22px !important;
+  }
+
+  /* ── Nav: tighter gap on very small screens */
+  .nav-actions {
+    gap: 6px !important;
+  }
+  .nav-actions .btn {
+    padding-left: 10px !important;
+    padding-right: 10px !important;
+    font-size: 13px !important;
+  }
+
+  /* ── StatPill: smaller padding on tiny phones */
+  .stat-pill {
+    padding: 14px 20px !important;
+    min-width: 120px !important;
+  }
+
+  /* ── QR Matrix: extra scale down */
+  .qr-matrix-wrap {
+    transform: scale(0.58) !important;
+    margin-bottom: -80px !important;
+  }
+
+  /* ── Hero section: tighter on tiny phones */
+  .hero-section {
+    padding: 36px 0 48px !important;
+  }
+
+  /* ── CTA banner inner padding */
+  .cta-banner-inner {
+    padding: 24px 14px !important;
+  }
+}
