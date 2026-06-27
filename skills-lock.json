@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "efecto-web-design": {
+      "source": "pablostanley/efecto-plugin",
+      "sourceType": "github",
+      "skillPath": "skills/web-design/SKILL.md",
+      "computedHash": "c5bc1f2cea3006df51f4d67708a8578ecdd35e3e3a3a941d8a87b81a6c5f0f01"
+    }
+  }
+}

@@ -452,6 +452,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onLogin 
         </div>
       </header>
 
+      <main>
       {/* ── Hero Section ──────────────────────────────────────────────────── */}
       <section className="hero-section" style={{ padding: '80px 0 96px', position: 'relative', backgroundColor: 'var(--color-app-bg)' }}>
         {/* Cloth physics dot grid */}
@@ -691,6 +692,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onLogin 
           </div>
         </div>
       </section>
+      </main>
 
       {/* ── Footer ────────────────────────────────────────────────────────── */}
       <footer style={{
@@ -714,7 +716,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onLogin 
             <span className="highlight-pill highlight-pill-violet" style={{ fontSize: 10 }}>Omnichannel</span>
             <span className="highlight-pill highlight-pill-green" style={{ fontSize: 10 }}>Analytics</span>
           </div>
-          <span style={{ color: 'var(--color-text-disabled)', fontSize: 12 }}>
+          <span style={{ color: 'var(--color-text-secondary)', fontSize: 12 }}>
             © 2026 chroniQR Inc.
           </span>
         </div>
